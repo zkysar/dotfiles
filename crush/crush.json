@@ -1,0 +1,25 @@
+{
+  "providers": {
+    "lmstudio": {
+      "name": "LM Studio",
+      "base_url": "http://localhost:1234/v1/",
+      "type": "openai",
+      "streaming": false,
+      "models": [
+        {
+          "name": "qwen3-4b",
+          "id": "qwen3-4b",
+          "context_window": 8000,
+          "default_max_tokens": 2000
+        },
+        {
+          "name": "qwen3-0.6b",
+          "id": "qwen3-0.6b",
+          "context_window": 1000,
+          "default_max_tokens": 500
+        }
+      ]
+    }
+  }
+}
+
