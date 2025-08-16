@@ -31,3 +31,11 @@ if command -v fzf &> /dev/null; then
     [ -f "$fzf_directory/shell/completion.zsh" ] && source "$fzf_directory/shell/completion.zsh"
 fi
 
+# =============================================================================
+# Keys
+# =============================================================================
+if [ -f ~/.keys ]; then
+    source ~/.keys
+else
+    echo "Warning: ~/.keys file not found. Please create it from keys.sh.template if needed."
+fi
