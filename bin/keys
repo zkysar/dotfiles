@@ -37,16 +37,40 @@ case "$cmd" in
       echo "error: keepercommander not installed. Run bin/bootstrap first." >&2
       exit 1
     fi
+    if ! command -v jq >/dev/null 2>&1; then
+      echo "error: jq not installed. Run bin/bootstrap first." >&2
+      exit 1
+    fi
+    # Fetch full vault listing once. `keeper list` output is JSON: [{record_uid, title, ...}, ...].
+    listing=$(keeper list --format=json 2>/dev/null)
+    if [ -z "$listing" ]; then
+      echo "error: 'keeper list' returned no output — are you logged in? Run 'keeper login'." >&2
+      exit 1
+    fi
     fetched=0; missing=0
     while IFS=$'\t' read -r kc kp; do
-      val=$(keeper get "$kp" --format=json 2>/dev/null | awk -F'"' '/"password"/ {print $4; exit}' || true)
+      # Last path segment is the record title (e.g. "API Tokens/Todoist" → "Todoist",
+      # "API Tokens/Pushover/AppToken" → "AppToken").
+      title="${kp##*/}"
+      uid=$(printf '%s' "$listing" | jq -r --arg t "$title" '.[] | select(.title == $t) | .record_uid' | head -n1)
+      if [ -z "$uid" ]; then
+        echo "✗ $kc: no Keeper record with title '$title' (path '$kp')" >&2
+        missing=$((missing+1))
+        continue
+      fi
+      val=$(keeper get "$uid" --format=json 2>/dev/null | jq -r '.password // empty' 2>/dev/null)
       if [ -z "$val" ]; then
-        echo "✗ $kc: Keeper record '$kp' not found or has no password field" >&2
+        # Fallback: try other password-y fields
+        val=$(keeper get "$uid" --format=json 2>/dev/null \
+          | jq -r '(.fields // []) | map(select(.type == "password" or .type == "secret")) | .[0].value[0] // empty' 2>/dev/null)
+      fi
+      if [ -z "$val" ]; then
+        echo "✗ $kc: found record '$title' (uid $uid) but no password field" >&2
         missing=$((missing+1))
         continue
       fi
       security add-generic-password -U -s "$kc" -a "$USER" -w "$val"
-      echo "✓ $kc synced"
+      echo "✓ $kc synced (via '$title')"
       fetched=$((fetched+1))
     done < <(parse_keys)
     echo ""
