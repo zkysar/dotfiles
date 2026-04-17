@@ -11,7 +11,7 @@
 set -euo pipefail
 
 KEYS_FILE="$HOME/.keys.sh"
-FOLDER="Env Vars"
+FOLDER="env-vars"
 RECORD_TYPE="login"
 EXECUTE=0
 ONLY=""
