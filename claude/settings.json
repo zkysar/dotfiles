@@ -4,6 +4,9 @@
       "Read:~/.davinci-mcp/**",
       "mcp__mermaid__generate_mermaid_diagram"
     ],
+    "deny": [
+      "Bash(keeper*)"
+    ],
     "unsupervisedTools": [
       "Edit",
       "MultiEdit",
