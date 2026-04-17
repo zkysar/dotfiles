@@ -1,0 +1,89 @@
+#!/usr/bin/env bash
+# Report symlink health + uncommitted drift in the repo.
+# --quiet: silent on clean state, one-line summary when dirty.
+set -euo pipefail
+
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+MANIFEST="$REPO_ROOT/manifest.toml"
+QUIET=0
+[ "${1:-}" = "--quiet" ] && QUIET=1
+
+parse_manifest() {
+  awk '
+    /^\[\[link\]\]/ { in_link=1; src=""; dest=""; next }
+    in_link && /^src[[:space:]]*=/  { match($0, /"[^"]*"/); src  = substr($0, RSTART+1, RLENGTH-2) }
+    in_link && /^dest[[:space:]]*=/ {
+      match($0, /"[^"]*"/); dest = substr($0, RSTART+1, RLENGTH-2)
+      if (src != "" && dest != "") print src "\t" dest
+      in_link=0
+    }
+  ' "$MANIFEST"
+}
+
+expand_home() {
+  case "$1" in
+    "~/"*) echo "$HOME/${1:2}" ;;
+    *)     echo "$1" ;;
+  esac
+}
+
+ok=0; bad=0
+issues=""
+while IFS=$'\t' read -r src dest; do
+  dest_abs="$(expand_home "$dest")"
+  expected="$REPO_ROOT/$src"
+  if [ -L "$dest_abs" ] && [ "$(readlink "$dest_abs")" = "$expected" ]; then
+    if [ -e "$dest_abs" ]; then
+      ok=$((ok+1))
+    else
+      bad=$((bad+1)); issues="${issues}  $dest (broken/dangling)"$'\n'
+    fi
+  else
+    bad=$((bad+1))
+    if [ ! -e "$dest_abs" ] && [ ! -L "$dest_abs" ]; then
+      issues="${issues}  $dest (missing)"$'\n'
+    else
+      issues="${issues}  $dest (not our symlink)"$'\n'
+    fi
+  fi
+done < <(parse_manifest)
+
+total=$((ok + bad))
+
+cd "$REPO_ROOT"
+git_status="$(git status --porcelain 2>/dev/null || true)"
+git_count=0
+if [ -n "$git_status" ]; then
+  git_count=$(printf '%s\n' "$git_status" | wc -l | tr -d ' ')
+fi
+
+clean=1
+[ "$bad" -gt 0 ]       && clean=0
+[ "$git_count" -gt 0 ] && clean=0
+
+if [ "$QUIET" = 1 ]; then
+  if [ "$clean" = 0 ]; then
+    parts=""
+    [ "$bad" -gt 0 ]       && parts="${parts}${bad} symlink issue(s) "
+    [ "$git_count" -gt 0 ] && parts="${parts}${git_count} uncommitted change(s)"
+    echo "dotfiles: ${parts}— run 'bin/doctor' for detail"
+    exit 1
+  fi
+  exit 0
+fi
+
+if [ "$bad" -eq 0 ]; then
+  echo "✓ $ok/$total symlinks healthy"
+else
+  echo "✗ $bad/$total symlink issues:"
+  printf '%s' "$issues"
+fi
+
+if [ "$git_count" -gt 0 ]; then
+  echo "✗ $git_count uncommitted changes:"
+  printf '%s\n' "$git_status" | sed 's/^/  /'
+else
+  echo "✓ no uncommitted changes"
+fi
+
+[ "$clean" = 1 ] && exit 0 || exit 1
