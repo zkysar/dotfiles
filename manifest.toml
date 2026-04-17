@@ -1,0 +1,46 @@
+# Each [[link]] creates a symlink from <repo>/src → dest.
+# Scripts in bin/ read this file. Parser is a simple awk — keep entries flat.
+
+[[link]]
+src  = "shell/zshrc"
+dest = "~/.zshrc"
+
+[[link]]
+src  = "tmux/tmux.conf"
+dest = "~/.tmux.conf"
+
+[[link]]
+src  = "nvim"
+dest = "~/.config/nvim"
+
+[[link]]
+src  = "git/gitconfig"
+dest = "~/.gitconfig"
+
+[[link]]
+src  = "claude/settings.json"
+dest = "~/.claude/settings.json"
+
+[[link]]
+src  = "claude/commands"
+dest = "~/.claude/commands"
+
+[[link]]
+src  = "claude/hooks"
+dest = "~/.claude/hooks"
+
+[[link]]
+src  = "claude/agents-library"
+dest = "~/.claude/agents-library"
+
+[[link]]
+src  = "claude/mcp-library"
+dest = "~/.claude/mcp-library"
+
+[[link]]
+src  = "claude/output-styles"
+dest = "~/.claude/output-styles"
+
+[[link]]
+src  = "claude/file-templates"
+dest = "~/.claude/file-templates"
