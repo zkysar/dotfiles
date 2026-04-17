@@ -1,0 +1,127 @@
+#!/usr/bin/env bash
+# Keeper ↔ Keychain mirror.
+# Subcommands: list, sync, add, rm
+# Reads shell/keys.manifest.toml.
+set -euo pipefail
+
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+KEYS_MANIFEST="$REPO_ROOT/shell/keys.manifest.toml"
+
+parse_keys() {
+  awk '
+    /^\[\[key\]\]/ { in_key=1; kc=""; kp=""; next }
+    in_key && /^keychain[[:space:]]*=/ { match($0, /"[^"]*"/); kc = substr($0, RSTART+1, RLENGTH-2) }
+    in_key && /^keeper[[:space:]]*=/   {
+      match($0, /"[^"]*"/); kp = substr($0, RSTART+1, RLENGTH-2)
+      if (kc != "" && kp != "") print kc "\t" kp
+      in_key=0
+    }
+  ' "$KEYS_MANIFEST"
+}
+
+cmd="${1:-}"
+case "$cmd" in
+  list)
+    while IFS=$'\t' read -r kc kp; do
+      if security find-generic-password -s "$kc" -a "$USER" -w >/dev/null 2>&1; then
+        kc_state="present"
+      else
+        kc_state="MISSING"
+      fi
+      printf '%-30s keychain:%-8s keeper:%s\n' "$kc" "$kc_state" "$kp"
+    done < <(parse_keys)
+    ;;
+
+  sync)
+    if ! command -v keeper >/dev/null 2>&1; then
+      echo "error: keepercommander not installed. Run bin/bootstrap first." >&2
+      exit 1
+    fi
+    fetched=0; missing=0
+    while IFS=$'\t' read -r kc kp; do
+      val=$(keeper get "$kp" --format=json 2>/dev/null | awk -F'"' '/"password"/ {print $4; exit}' || true)
+      if [ -z "$val" ]; then
+        echo "✗ $kc: Keeper record '$kp' not found or has no password field" >&2
+        missing=$((missing+1))
+        continue
+      fi
+      security add-generic-password -U -s "$kc" -a "$USER" -w "$val"
+      echo "✓ $kc synced"
+      fetched=$((fetched+1))
+    done < <(parse_keys)
+    echo ""
+    echo "Fetched $fetched, missing $missing"
+    ;;
+
+  add)
+    kc="${2:-}"; kp="${3:-}"
+    if [ -z "$kc" ] || [ -z "$kp" ]; then
+      echo "usage: keys add <KEYCHAIN_NAME> <keeper/record/path>" >&2
+      exit 1
+    fi
+    printf 'Value for %s (hidden): ' "$kc" >&2
+    stty -echo; read -r val; stty echo; echo >&2
+    [ -z "$val" ] && { echo "error: empty value" >&2; exit 1; }
+    security add-generic-password -U -s "$kc" -a "$USER" -w "$val"
+    echo "✓ $kc written to Keychain"
+    echo ""
+    echo "Next steps (manual — Keeper Commander 'record-add' syntax varies):"
+    echo "  1. Create/update Keeper record at path: $kp"
+    echo "     Set the password field to the same value you just entered."
+    echo "  2. Verify by running: bin/keys sync"
+    {
+      echo ""
+      echo "[[key]]"
+      echo "keychain = \"$kc\""
+      echo "keeper   = \"$kp\""
+    } >> "$KEYS_MANIFEST"
+    echo "✓ manifest entry appended to shell/keys.manifest.toml"
+    ;;
+
+  rm)
+    kc="${2:-}"
+    if [ -z "$kc" ]; then echo "usage: keys rm <KEYCHAIN_NAME>" >&2; exit 1; fi
+    security delete-generic-password -s "$kc" -a "$USER" >/dev/null 2>&1 \
+      && echo "✓ removed $kc from Keychain" \
+      || echo "⚠ $kc not in Keychain"
+    tmp=$(mktemp)
+    awk -v target="$kc" '
+      BEGIN { block=""; in_block=0; match_block=0 }
+      /^\[\[key\]\]/ {
+        if (in_block && !match_block) printf "%s", block
+        block=$0"\n"; in_block=1; match_block=0; next
+      }
+      in_block {
+        block = block $0 "\n"
+        if (match($0, /"[^"]*"/)) {
+          val = substr($0, RSTART+1, RLENGTH-2)
+          if (val == target) match_block=1
+        }
+        if ($0 ~ /^keeper[[:space:]]*=/) {
+          if (!match_block) printf "%s", block
+          block=""; in_block=0; match_block=0
+        }
+        next
+      }
+      { print }
+      END { if (in_block && !match_block) printf "%s", block }
+    ' "$KEYS_MANIFEST" > "$tmp"
+    mv "$tmp" "$KEYS_MANIFEST"
+    echo "✓ manifest entry for $kc removed"
+    echo ""
+    echo "Note: Keeper record untouched — delete manually in Keeper if desired."
+    ;;
+
+  *)
+    cat >&2 <<EOF
+usage: keys <command>
+
+  list        show each Keychain entry's presence
+  sync        fetch every manifest entry from Keeper into Keychain
+  add NAME KEEPER_PATH
+              prompt for value, write to Keychain, append to manifest
+  rm NAME     remove from Keychain and manifest (Keeper untouched)
+EOF
+    exit 1
+    ;;
+esac
