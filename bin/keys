@@ -1,15 +1,19 @@
 #!/usr/bin/env bash
 # Keeper → Keychain one-way sync (Option 2: Keeper is source of truth).
 #
-# Convention: any Keeper record whose title matches ENV_VAR_STYLE
-# (^[A-Z][A-Z0-9_]+$) is treated as an env var. Its 'password' field
-# becomes the value. Run 'bin/keys sync' after adding/editing records
-# in Keeper to refresh Keychain and the names list.
+# Convention: records inside the `ENV_FOLDER` folder in Keeper whose title
+# matches `TITLE_REGEX` are treated as env vars. Each record's password
+# field is mirrored to a macOS Keychain entry with the record title as the
+# service name. zshrc iterates the names file at shell start and exports
+# each present Keychain entry.
+#
+# Adjust ENV_FOLDER below if you rename the folder in Keeper.
 #
 # Subcommands: list, sync, rm
 set -euo pipefail
 
 NAMES_FILE="$HOME/.dotfiles-keychain-names"
+ENV_FOLDER="env-vars"
 TITLE_REGEX='^[A-Z][A-Z0-9_]+$'
 
 cmd="${1:-}"
@@ -38,25 +42,35 @@ case "$cmd" in
       echo "error: jq not installed. Run bin/bootstrap first." >&2
       exit 1
     fi
-    listing=$(keeper list --format=json 2>/dev/null)
+    # Scope to records inside ENV_FOLDER. Output shape: [{type, uid, name, details}, ...].
+    listing=$(keeper ls "$ENV_FOLDER" --format=json 2>/dev/null)
     if [ -z "$listing" ]; then
-      echo "error: 'keeper list' returned no output — are you logged in? Run 'keeper login'." >&2
+      echo "error: 'keeper ls $ENV_FOLDER' returned nothing — folder missing, empty, or not logged in?" >&2
+      echo "Check 'keeper login' and that a folder named '$ENV_FOLDER' exists with records in it." >&2
       exit 1
     fi
-    # Records whose title matches ENV_VAR_STYLE.
+    # Only records (not subfolders) whose name matches the env-var regex.
     records=$(printf '%s' "$listing" | jq -c --arg re "$TITLE_REGEX" \
-      '.[] | select(.title | test($re))')
+      '.[] | select(.type == "record" and (.name | test($re)))')
     if [ -z "$records" ]; then
-      echo "No records with env-var-style titles found in Keeper." >&2
-      echo "Create records with titles like MY_API_KEY and put the value in the password field." >&2
+      echo "No env-var-style records in '$ENV_FOLDER'." >&2
       exit 0
     fi
-    fetched=0; failed=0
+    fetched=0; failed=0; skipped_dupe=0
     names_tmp=$(mktemp)
+    seen_tmp=$(mktemp)
     while IFS= read -r rec; do
       [ -z "$rec" ] && continue
-      title=$(printf '%s' "$rec" | jq -r '.title')
-      uid=$(printf '%s'   "$rec" | jq -r '.record_uid')
+      title=$(printf '%s' "$rec" | jq -r '.name')
+      uid=$(printf   '%s' "$rec" | jq -r '.uid')
+      # De-dupe by title — first occurrence wins.
+      if grep -Fxq "$title" "$seen_tmp" 2>/dev/null; then
+        echo "⚠ $title: duplicate record in '$ENV_FOLDER' (keeping first)" >&2
+        skipped_dupe=$((skipped_dupe+1))
+        continue
+      fi
+      printf '%s\n' "$title" >> "$seen_tmp"
+
       detail=$(keeper get "$uid" --format=json 2>/dev/null || true)
       if [ -z "$detail" ]; then
         echo "✗ $title: could not fetch record detail" >&2
@@ -78,9 +92,10 @@ case "$cmd" in
       echo "✓ $title"
       fetched=$((fetched+1))
     done <<< "$records"
+    rm -f "$seen_tmp"
     mv "$names_tmp" "$NAMES_FILE"
     echo ""
-    echo "Synced $fetched to Keychain, failed $failed. Names tracked in $NAMES_FILE"
+    echo "Synced $fetched to Keychain (skipped $skipped_dupe duplicates, $failed failed). Names tracked in $NAMES_FILE"
     ;;
 
   rm)
