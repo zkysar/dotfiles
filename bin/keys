@@ -43,21 +43,21 @@ case "$cmd" in
       exit 1
     fi
 
-    # Fetch listing. If the session is expired keeper will print auth prompts
-    # (via /dev/tty) and append diagnostic lines to stdout that aren't JSON.
-    # We detect that up front rather than letting jq die cryptically.
-    listing=$(keeper ls "$ENV_FOLDER" --format=json 2>&1)
+    # Single keeper call: export the ENV_FOLDER folder as JSON to stdout
+    # (omitting the positional filename = console output).
+    # --force suppresses any interactive confirmation.
+    raw=$(keeper export --folder "$ENV_FOLDER" --format=json --force 2>&1)
 
-    if [ -z "$listing" ]; then
-      echo "error: 'keeper ls $ENV_FOLDER' returned no data." >&2
-      echo "Check that a folder named '$ENV_FOLDER' exists and contains records." >&2
+    if [ -z "$raw" ]; then
+      echo "error: 'keeper export --folder $ENV_FOLDER' returned nothing." >&2
       exit 1
     fi
 
-    # Strip everything before the first line starting with `[` (JSON array).
-    listing_json=$(printf '%s\n' "$listing" | awk '/^[[:space:]]*\[/ {found=1} found {print}')
+    # Strip anything before the first line starting with '[' or '{' — keeper
+    # may prefix auth prompts or diagnostics to stdout when session expires.
+    json=$(printf '%s\n' "$raw" | awk '/^[[:space:]]*[\[{]/ {found=1} found {print}')
 
-    if [ -z "$listing_json" ] || ! printf '%s' "$listing_json" | jq empty >/dev/null 2>&1; then
+    if [ -z "$json" ] || ! printf '%s' "$json" | jq empty >/dev/null 2>&1; then
       cat >&2 <<EOF
 
 ⚠ Could not parse Keeper output as JSON. Usually this means your Keeper session
@@ -69,54 +69,43 @@ case "$cmd" in
 EOF
       exit 2
     fi
-    listing="$listing_json"
-    # Only records (not subfolders) whose name matches the env-var regex.
-    records=$(printf '%s' "$listing" | jq -c --arg re "$TITLE_REGEX" \
-      '.[] | select(.type == "record" and (.name | test($re)))')
-    if [ -z "$records" ]; then
-      echo "No env-var-style records in '$ENV_FOLDER'." >&2
+
+    # Extract (title, password) for records whose title matches the env-var
+    # regex and whose password is non-empty. Handles both array-root and
+    # object-root top-level shapes.
+    pairs=$(printf '%s' "$json" | jq -r --arg re "$TITLE_REGEX" '
+      (if type == "array" then . else (.records // []) end)
+      | .[]
+      | select((.title // "") | test($re))
+      | select((.password // "") != "")
+      | "\(.title)\t\(.password)"
+    ')
+
+    if [ -z "$pairs" ]; then
+      echo "No env-var-style records with passwords found in '$ENV_FOLDER'." >&2
       exit 0
     fi
-    fetched=0; failed=0; skipped_dupe=0
+
+    fetched=0; skipped_dupe=0
     names_tmp=$(mktemp)
     seen_tmp=$(mktemp)
-    while IFS= read -r rec; do
-      [ -z "$rec" ] && continue
-      title=$(printf '%s' "$rec" | jq -r '.name')
-      uid=$(printf   '%s' "$rec" | jq -r '.uid')
-      # De-dupe by title — first occurrence wins.
+    while IFS=$'\t' read -r title value; do
+      [ -z "$title" ] && continue
       if grep -Fxq "$title" "$seen_tmp" 2>/dev/null; then
         echo "⚠ $title: duplicate record in '$ENV_FOLDER' (keeping first)" >&2
         skipped_dupe=$((skipped_dupe+1))
         continue
       fi
       printf '%s\n' "$title" >> "$seen_tmp"
-
-      detail=$(keeper get "$uid" --format=json || true)
-      if [ -z "$detail" ]; then
-        echo "✗ $title: could not fetch record detail" >&2
-        failed=$((failed+1))
-        continue
-      fi
-      val=$(printf '%s' "$detail" | jq -r '.password // empty')
-      if [ -z "$val" ]; then
-        val=$(printf '%s' "$detail" \
-          | jq -r '(.fields // []) | map(select(.type == "password" or .type == "secret")) | .[0].value[0] // empty')
-      fi
-      if [ -z "$val" ]; then
-        echo "✗ $title: record has no password/secret field" >&2
-        failed=$((failed+1))
-        continue
-      fi
-      security add-generic-password -U -s "$title" -a "$USER" -w "$val"
+      security add-generic-password -U -s "$title" -a "$USER" -w "$value"
       printf '%s\n' "$title" >> "$names_tmp"
       echo "✓ $title"
       fetched=$((fetched+1))
-    done <<< "$records"
+    done <<< "$pairs"
     rm -f "$seen_tmp"
     mv "$names_tmp" "$NAMES_FILE"
     echo ""
-    echo "Synced $fetched to Keychain (skipped $skipped_dupe duplicates, $failed failed). Names tracked in $NAMES_FILE"
+    echo "Synced $fetched to Keychain (skipped $skipped_dupe dupes). One keeper call."
     ;;
 
   rm)
