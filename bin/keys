@@ -43,7 +43,8 @@ case "$cmd" in
       exit 1
     fi
     # Scope to records inside ENV_FOLDER. Output shape: [{type, uid, name, details}, ...].
-    listing=$(keeper ls "$ENV_FOLDER" --format=json 2>/dev/null)
+    # stderr intentionally passed through so auth prompts / errors are visible.
+    listing=$(keeper ls "$ENV_FOLDER" --format=json)
     if [ -z "$listing" ]; then
       echo "error: 'keeper ls $ENV_FOLDER' returned nothing — folder missing, empty, or not logged in?" >&2
       echo "Check 'keeper login' and that a folder named '$ENV_FOLDER' exists with records in it." >&2
@@ -71,7 +72,7 @@ case "$cmd" in
       fi
       printf '%s\n' "$title" >> "$seen_tmp"
 
-      detail=$(keeper get "$uid" --format=json 2>/dev/null || true)
+      detail=$(keeper get "$uid" --format=json || true)
       if [ -z "$detail" ]; then
         echo "✗ $title: could not fetch record detail" >&2
         failed=$((failed+1))
