@@ -77,46 +77,75 @@ EOF
       echo "No env-var-style records in '$ENV_FOLDER'." >&2
       exit 0
     fi
-    fetched=0; failed=0; skipped_dupe=0
-    names_tmp=$(mktemp)
+    # De-dupe by title (first occurrence wins) — fast, sequential.
     seen_tmp=$(mktemp)
+    work=()
+    skipped_dupe=0
     while IFS= read -r rec; do
       [ -z "$rec" ] && continue
       title=$(printf '%s' "$rec" | jq -r '.name')
       uid=$(printf   '%s' "$rec" | jq -r '.uid')
-      # De-dupe by title — first occurrence wins.
       if grep -Fxq "$title" "$seen_tmp" 2>/dev/null; then
-        echo "⚠ $title: duplicate record in '$ENV_FOLDER' (keeping first)" >&2
+        echo "⚠ $title: duplicate in '$ENV_FOLDER' (keeping first)" >&2
         skipped_dupe=$((skipped_dupe+1))
         continue
       fi
       printf '%s\n' "$title" >> "$seen_tmp"
-
-      detail=$(keeper get "$uid" --format=json || true)
-      if [ -z "$detail" ]; then
-        echo "✗ $title: could not fetch record detail" >&2
-        failed=$((failed+1))
-        continue
-      fi
-      val=$(printf '%s' "$detail" | jq -r '.password // empty')
-      if [ -z "$val" ]; then
-        val=$(printf '%s' "$detail" \
-          | jq -r '(.fields // []) | map(select(.type == "password" or .type == "secret")) | .[0].value[0] // empty')
-      fi
-      if [ -z "$val" ]; then
-        echo "✗ $title: record has no password/secret field" >&2
-        failed=$((failed+1))
-        continue
-      fi
-      security add-generic-password -U -s "$title" -a "$USER" -w "$val"
-      printf '%s\n' "$title" >> "$names_tmp"
-      echo "✓ $title"
-      fetched=$((fetched+1))
+      work+=("$title"$'\t'"$uid")
     done <<< "$records"
     rm -f "$seen_tmp"
+
+    # Parallel fetch: one background job per record. Each writes its outcome
+    # to a per-job file so aggregation is race-free and order is preserved.
+    results_dir=$(mktemp -d)
+    trap "rm -rf '$results_dir'" EXIT
+    for i in "${!work[@]}"; do
+      IFS=$'\t' read -r title uid <<< "${work[$i]}"
+      (
+        detail=$(keeper get "$uid" --format=json 2>/dev/null || true)
+        if [ -z "$detail" ]; then
+          printf 'FAIL\tno_detail\t%s\n' "$title" > "$results_dir/$i"
+          exit 0
+        fi
+        val=$(printf '%s' "$detail" | jq -r '.password // empty' 2>/dev/null)
+        if [ -z "$val" ]; then
+          val=$(printf '%s' "$detail" \
+            | jq -r '(.fields // []) | map(select(.type == "password" or .type == "secret")) | .[0].value[0] // empty' 2>/dev/null)
+        fi
+        if [ -z "$val" ]; then
+          printf 'FAIL\tno_password\t%s\n' "$title" > "$results_dir/$i"
+          exit 0
+        fi
+        security add-generic-password -U -s "$title" -a "$USER" -w "$val"
+        printf 'OK\t%s\n' "$title" > "$results_dir/$i"
+      ) &
+    done
+    wait
+
+    # Aggregate in original order.
+    fetched=0; failed=0
+    names_tmp=$(mktemp)
+    for i in "${!work[@]}"; do
+      line=$(cat "$results_dir/$i" 2>/dev/null || echo "FAIL	no_result	unknown")
+      case "${line%%$'\t'*}" in
+        OK)
+          title="${line#OK$'\t'}"
+          echo "✓ $title"
+          printf '%s\n' "$title" >> "$names_tmp"
+          fetched=$((fetched+1))
+          ;;
+        FAIL)
+          rest="${line#FAIL$'\t'}"
+          reason="${rest%%$'\t'*}"
+          title="${rest#*$'\t'}"
+          echo "✗ $title: $reason" >&2
+          failed=$((failed+1))
+          ;;
+      esac
+    done
     mv "$names_tmp" "$NAMES_FILE"
     echo ""
-    echo "Synced $fetched to Keychain (skipped $skipped_dupe duplicates, $failed failed). Names tracked in $NAMES_FILE"
+    echo "Synced $fetched to Keychain (skipped $skipped_dupe dupes, $failed failed). ${#work[@]} records fetched in parallel."
     ;;
 
   rm)
