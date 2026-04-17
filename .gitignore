@@ -1,0 +1,20 @@
+# Machine-specific Claude settings
+claude/settings.local.json
+
+# Hook secrets (.env pattern already used by pushover-notification.py)
+claude/hooks/.env
+
+# Claude runtime noise that lands inside symlinked dirs
+claude/**/cache/
+claude/**/*.cache
+claude/**/*.log
+
+# Editor/OS noise
+.DS_Store
+nvim/.netrwhist
+
+# Backups created by bin/link (stored at $HOME, not in repo, but guard anyway)
+.dotfiles-backup/
+
+# Never commit key values
+shell/keys.sh
