@@ -43,33 +43,33 @@ case "$cmd" in
       exit 1
     fi
 
-    # Pre-flight: run with stdin closed so keeper can't wait on an auth prompt.
-    # Session problems → non-zero exit or auth-related stderr → clear message.
-    stderr_file=$(mktemp)
-    listing=$(keeper ls "$ENV_FOLDER" --format=json </dev/null 2>"$stderr_file") || true
-    stderr_content=$(cat "$stderr_file")
-    rm -f "$stderr_file"
-
-    if echo "$stderr_content" | grep -qiE "two-factor|2fa|authentication required|not logged in|login expired|session"; then
-      cat >&2 <<EOF
-
-⚠ Keeper session expired or needs re-authentication.
-  Run this in your terminal:
-
-      keeper login
-
-  Then retry: bin/keys sync
-
-EOF
-      exit 2
-    fi
+    # Fetch listing. If the session is expired keeper will print auth prompts
+    # (via /dev/tty) and append diagnostic lines to stdout that aren't JSON.
+    # We detect that up front rather than letting jq die cryptically.
+    listing=$(keeper ls "$ENV_FOLDER" --format=json 2>&1)
 
     if [ -z "$listing" ]; then
       echo "error: 'keeper ls $ENV_FOLDER' returned no data." >&2
       echo "Check that a folder named '$ENV_FOLDER' exists and contains records." >&2
-      [ -n "$stderr_content" ] && { echo "keeper stderr:" >&2; echo "$stderr_content" >&2; }
       exit 1
     fi
+
+    # Strip everything before the first line starting with `[` (JSON array).
+    listing_json=$(printf '%s\n' "$listing" | awk '/^[[:space:]]*\[/ {found=1} found {print}')
+
+    if [ -z "$listing_json" ] || ! printf '%s' "$listing_json" | jq empty >/dev/null 2>&1; then
+      cat >&2 <<EOF
+
+⚠ Could not parse Keeper output as JSON. Usually this means your Keeper session
+  needs to be refreshed. Run this in your terminal, then retry:
+
+      keeper login
+      bin/keys sync
+
+EOF
+      exit 2
+    fi
+    listing="$listing_json"
     # Only records (not subfolders) whose name matches the env-var regex.
     records=$(printf '%s' "$listing" | jq -c --arg re "$TITLE_REGEX" \
       '.[] | select(.type == "record" and (.name | test($re)))')
