@@ -42,12 +42,32 @@ case "$cmd" in
       echo "error: jq not installed. Run bin/bootstrap first." >&2
       exit 1
     fi
-    # Scope to records inside ENV_FOLDER. Output shape: [{type, uid, name, details}, ...].
-    # stderr intentionally passed through so auth prompts / errors are visible.
-    listing=$(keeper ls "$ENV_FOLDER" --format=json)
+
+    # Pre-flight: run with stdin closed so keeper can't wait on an auth prompt.
+    # Session problems → non-zero exit or auth-related stderr → clear message.
+    stderr_file=$(mktemp)
+    listing=$(keeper ls "$ENV_FOLDER" --format=json </dev/null 2>"$stderr_file") || true
+    stderr_content=$(cat "$stderr_file")
+    rm -f "$stderr_file"
+
+    if echo "$stderr_content" | grep -qiE "two-factor|2fa|authentication required|not logged in|login expired|session"; then
+      cat >&2 <<EOF
+
+⚠ Keeper session expired or needs re-authentication.
+  Run this in your terminal:
+
+      keeper login
+
+  Then retry: bin/keys sync
+
+EOF
+      exit 2
+    fi
+
     if [ -z "$listing" ]; then
-      echo "error: 'keeper ls $ENV_FOLDER' returned nothing — folder missing, empty, or not logged in?" >&2
-      echo "Check 'keeper login' and that a folder named '$ENV_FOLDER' exists with records in it." >&2
+      echo "error: 'keeper ls $ENV_FOLDER' returned no data." >&2
+      echo "Check that a folder named '$ENV_FOLDER' exists and contains records." >&2
+      [ -n "$stderr_content" ] && { echo "keeper stderr:" >&2; echo "$stderr_content" >&2; }
       exit 1
     fi
     # Only records (not subfolders) whose name matches the env-var regex.
