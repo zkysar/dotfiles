@@ -1,0 +1,85 @@
+#!/usr/bin/env bash
+# Create/verify symlinks per manifest.toml.
+# - already-correct symlink: skip
+# - dest missing:            create
+# - dest is a real file/dir: move to ~/.dotfiles-backup/<ts>/ then link
+# - dest is a symlink elsewhere: warn (require --force to overwrite)
+set -euo pipefail
+
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+MANIFEST="$REPO_ROOT/manifest.toml"
+BACKUP_ROOT="$HOME/.dotfiles-backup/$(date -u +%Y%m%dT%H%M%SZ)"
+FORCE=0
+[ "${1:-}" = "--force" ] && FORCE=1
+
+[ -f "$MANIFEST" ] || { echo "error: manifest.toml not found" >&2; exit 1; }
+
+parse_manifest() {
+  awk '
+    /^\[\[link\]\]/ { in_link=1; src=""; dest=""; next }
+    in_link && /^src[[:space:]]*=/  { match($0, /"[^"]*"/); src  = substr($0, RSTART+1, RLENGTH-2) }
+    in_link && /^dest[[:space:]]*=/ {
+      match($0, /"[^"]*"/); dest = substr($0, RSTART+1, RLENGTH-2)
+      if (src != "" && dest != "") print src "\t" dest
+      in_link=0
+    }
+  ' "$MANIFEST"
+}
+
+expand_home() {
+  case "$1" in
+    "~/"*) echo "$HOME/${1:2}" ;;
+    *)     echo "$1" ;;
+  esac
+}
+
+linked=0; skipped=0; backed_up=0; warned=0
+
+while IFS=$'\t' read -r src dest; do
+  [ -z "$src" ] && continue
+  src_abs="$REPO_ROOT/$src"
+  dest_abs="$(expand_home "$dest")"
+
+  if [ ! -e "$src_abs" ] && [ ! -L "$src_abs" ]; then
+    echo "✗ source missing in repo: $src" >&2
+    warned=$((warned+1))
+    continue
+  fi
+
+  mkdir -p "$(dirname "$dest_abs")"
+
+  if [ -L "$dest_abs" ]; then
+    current="$(readlink "$dest_abs")"
+    if [ "$current" = "$src_abs" ]; then
+      echo "✓ $dest"
+      skipped=$((skipped+1))
+      continue
+    fi
+    if [ "$FORCE" = 1 ]; then
+      rm "$dest_abs"
+      ln -s "$src_abs" "$dest_abs"
+      echo "→ replaced: $dest"
+      linked=$((linked+1))
+    else
+      echo "⚠ $dest → $current (use --force to overwrite)" >&2
+      warned=$((warned+1))
+    fi
+    continue
+  fi
+
+  if [ -e "$dest_abs" ]; then
+    rel="${dest_abs#$HOME/}"
+    backup_target="$BACKUP_ROOT/$rel"
+    mkdir -p "$(dirname "$backup_target")"
+    mv "$dest_abs" "$backup_target"
+    echo "→ backed up: $dest_abs → $backup_target"
+    backed_up=$((backed_up+1))
+  fi
+
+  ln -s "$src_abs" "$dest_abs"
+  echo "→ linked: $dest"
+  linked=$((linked+1))
+done < <(parse_manifest)
+
+echo ""
+echo "Summary: $linked linked, $skipped already correct, $backed_up backed up, $warned warnings"
