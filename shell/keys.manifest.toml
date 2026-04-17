@@ -1,0 +1,16 @@
+# Each [[key]] entry:
+#   keychain = service name used by `security` CLI AND exported env var name
+#   keeper   = record title/path in Keeper vault
+# No values here — values live in Keeper + Keychain only.
+
+[[key]]
+keychain = "TODOIST_API_TOKEN"
+keeper   = "API Tokens/Todoist"
+
+[[key]]
+keychain = "PUSHOVER_APP_TOKEN"
+keeper   = "API Tokens/Pushover/AppToken"
+
+[[key]]
+keychain = "PUSHOVER_USER_KEY"
+keeper   = "API Tokens/Pushover/UserKey"
