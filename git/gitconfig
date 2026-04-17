@@ -1,0 +1,18 @@
+# This is Git's per-user configuration file.
+[user]
+	name = Zach Kysar
+	email = zach.kysar@gmail.com
+# Please adapt and uncomment the following lines:
+#	name = Zach Kysar
+#	email = zachkysar@zachs-mbp.lan
+[credential]
+	helper = store
+	helper = 
+	helper = /usr/local/share/gcm-core/git-credential-manager
+[credential "https://dev.azure.com"]
+	useHttpPath = true
+[filter "lfs"]
+	clean = git-lfs clean -- %f
+	smudge = git-lfs smudge -- %f
+	process = git-lfs filter-process
+	required = true

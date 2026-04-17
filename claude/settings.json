@@ -1,0 +1,66 @@
+{
+  "permissions": {
+    "allow": [
+      "Read:~/.davinci-mcp/**",
+      "mcp__mermaid__generate_mermaid_diagram"
+    ],
+    "unsupervisedTools": [
+      "Edit",
+      "MultiEdit",
+      "Write",
+      "Bash",
+      "Read",
+      "Glob",
+      "Grep"
+    ],
+    "allowedCommands": [
+      "git",
+      "gh",
+      "npm test",
+      "python",
+      "node",
+      "pytest"
+    ]
+  },
+  "hooks": {
+    "Notification": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "osascript -e 'if (name of (info for (path to frontmost application))) is not \"Ghostty.app\" then display notification \"Claude needs your attention\" with title \"Claude Code\"'"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "osascript -e 'if (name of (info for (path to frontmost application))) is not \"Ghostty.app\" then display notification \"Response complete\" with title \"Claude Code\"'"
+          }
+        ]
+      }
+    ]
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "npx -y ccstatusline@latest",
+    "padding": 0
+  },
+  "enabledPlugins": {
+    "frontend-design@claude-plugins-official": true,
+    "superpowers@claude-plugins-official": true,
+    "claude-md-management@claude-plugins-official": true,
+    "skill-creator@claude-plugins-official": true
+  },
+  "alwaysThinkingEnabled": true,
+  "voiceEnabled": true,
+  "mcpServers": {},
+  "feedbackSurveyState": {
+    "lastShownTime": 1755134822529
+  },
+  "defaultOutputStyle": "sr-software-developer",
+  "preferredNotifChannel": "iterm2"
+}

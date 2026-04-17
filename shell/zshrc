@@ -1,0 +1,118 @@
+# =============================================================================
+# PATH Configuration
+# =============================================================================
+export PATH="$PATH:/opt/homebrew/bin"
+export PATH="$PATH:/Users/zachkysar/.lmstudio/bin"
+export PATH="$PATH:/Users/zachkysar/Library/Python/3.9/bin"
+export PATH="$PATH:/Applications/Visual Studio Code.app/Contents/Resources/app/bin"
+
+# =============================================================================
+# Google Cloud SDK
+# =============================================================================
+source '/opt/homebrew/share/google-cloud-sdk/path.zsh.inc'
+source '/opt/homebrew/share/google-cloud-sdk/completion.zsh.inc'
+
+# =============================================================================
+# Aliases
+# =============================================================================
+alias vim='nvim'
+alias python='python3.11'
+alias pip='pip3.11'
+# Dynamic scaffold alias - uses local build if in a scaffold git repo
+scaffold() {
+    # Check if we're in a git repo and find its root
+    local git_root=$(git rev-parse --show-toplevel 2>/dev/null)
+
+    # If in a scaffold git repo with a local build, use that
+    if [[ -n "$git_root" ]] && [[ -f "$git_root/dist/cli/index.js" ]] && [[ "$git_root" == *"scaffold"* ]]; then
+        node "$git_root/dist/cli/index.js" "$@"
+    # Otherwise use the main scaffold build
+    elif [[ -f "$HOME/git/scaffold/dist/cli/index.js" ]]; then
+        node "$HOME/git/scaffold/dist/cli/index.js" "$@"
+    else
+        echo "Error: scaffold CLI not found" >&2
+        return 1
+    fi
+}
+
+# =============================================================================
+# Custom Functions
+# =============================================================================
+# Source all function files from dotfiles
+for func_file in ~/git/dotfiles/zsh/functions/*.zsh(N); do
+    source "$func_file"
+done
+
+# =============================================================================
+# Environment Variables
+# =============================================================================
+export FAKE_LMSTUDIO_KEY=123
+
+export EDITOR="vim"
+
+# =============================================================================
+# Privacy & Telemetry
+# =============================================================================
+export DO_NOT_TRACK=1
+export CRUSH_DISABLE_METRICS=1
+
+# =============================================================================
+# Vi Mode Configuration
+# =============================================================================
+# Enable vi mode in zsh
+set -o vi
+
+# Reduce key delay to make vi mode more responsive
+export KEYTIMEOUT=1
+
+# =============================================================================
+# Terminal Session Management
+# =============================================================================
+# Only auto-attach to tmux if not running in VS Code or Warp
+if command -v tmux &> /dev/null && [ -z "$TMUX" ] && [ -z "$VSCODE_INJECTION" ] && [[ $TERM_PROGRAM != "WarpTerminal" ]] && [[ $TERM_PROGRAM != "ghostty" ]]; then
+    tmux attach-session -t default || tmux new-session -s default
+fi
+
+# =============================================================================
+# FZF Configuration
+# =============================================================================
+if command -v fzf &> /dev/null; then
+    fzf_directory=$(brew --prefix)/Cellar/fzf/$(fzf --version | cut -d ' ' -f 1)
+    [ -f "$fzf_directory/shell/key-bindings.zsh" ] && source "$fzf_directory/shell/key-bindings.zsh"
+    [ -f "$fzf_directory/shell/completion.zsh" ] && source "$fzf_directory/shell/completion.zsh"
+fi
+
+# =============================================================================
+# Keys
+# =============================================================================
+if [ -f ~/.keys.sh ]; then
+    source ~/.keys.sh
+else
+    echo "Warning: ~/.keys.sh file not found. Please create it from keys.sh.template if needed."
+fi
+
+# =============================================================================
+# Auto Complete configuration
+# =============================================================================
+# Terraform
+autoload -U +X compinit && compinit
+source <(kubectl completion zsh)
+autoload -U +X bashcompinit && bashcompinit
+complete -o nospace -C /opt/homebrew/bin/terraform terraform
+
+# GitHub CLI
+if command -v gh &> /dev/null; then
+    eval "$(gh completion -s zsh)"
+fi
+
+# GitHub Issue Manager
+if [ -f /Users/zachkysar/git/claude-tools/gh-issue-manager/completions/gh-issue-manager.zsh ]; then
+    source /Users/zachkysar/git/claude-tools/gh-issue-manager/completions/gh-issue-manager.zsh
+fi
+
+
+
+
+alias gyroflow="/Applications/Gyroflow.app/Contents/MacOS/gyroflow"
+
+export OLLAMA_MAX_LOADED_MODELS=2
