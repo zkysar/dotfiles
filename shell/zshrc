@@ -36,14 +36,6 @@ scaffold() {
 }
 
 # =============================================================================
-# Custom Functions
-# =============================================================================
-# Source all function files from dotfiles
-for func_file in ~/git/dotfiles/zsh/functions/*.zsh(N); do
-    source "$func_file"
-done
-
-# =============================================================================
 # Environment Variables
 # =============================================================================
 export FAKE_LMSTUDIO_KEY=123
@@ -83,12 +75,14 @@ if command -v fzf &> /dev/null; then
 fi
 
 # =============================================================================
-# Keys
+# Secrets — read from macOS Keychain (populated by `bin/keys sync`)
 # =============================================================================
-if [ -f ~/.keys.sh ]; then
-    source ~/.keys.sh
-else
-    echo "Warning: ~/.keys.sh file not found. Please create it from keys.sh.template if needed."
+if [ -f "$HOME/projects/dotfiles/shell/keys.manifest.toml" ]; then
+    while IFS= read -r _name; do
+        _val=$(security find-generic-password -s "$_name" -a "$USER" -w 2>/dev/null) || continue
+        [ -n "$_val" ] && export "$_name=$_val"
+    done < <(awk -F'"' '/^keychain[[:space:]]*=/ {print $2}' "$HOME/projects/dotfiles/shell/keys.manifest.toml")
+    unset _name _val
 fi
 
 # =============================================================================
@@ -116,3 +110,10 @@ fi
 alias gyroflow="/Applications/Gyroflow.app/Contents/MacOS/gyroflow"
 
 export OLLAMA_MAX_LOADED_MODELS=2
+
+# =============================================================================
+# Dotfiles drift nag
+# =============================================================================
+if [ -x "$HOME/projects/dotfiles/bin/doctor" ]; then
+    "$HOME/projects/dotfiles/bin/doctor" --quiet
+fi
