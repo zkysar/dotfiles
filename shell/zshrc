@@ -18,23 +18,6 @@ source '/opt/homebrew/share/google-cloud-sdk/completion.zsh.inc'
 alias vim='nvim'
 alias python='python3.11'
 alias pip='pip3.11'
-# Dynamic scaffold alias - uses local build if in a scaffold git repo
-scaffold() {
-    # Check if we're in a git repo and find its root
-    local git_root=$(git rev-parse --show-toplevel 2>/dev/null)
-
-    # If in a scaffold git repo with a local build, use that
-    if [[ -n "$git_root" ]] && [[ -f "$git_root/dist/cli/index.js" ]] && [[ "$git_root" == *"scaffold"* ]]; then
-        node "$git_root/dist/cli/index.js" "$@"
-    # Otherwise use the main scaffold build
-    elif [[ -f "$HOME/git/scaffold/dist/cli/index.js" ]]; then
-        node "$HOME/git/scaffold/dist/cli/index.js" "$@"
-    else
-        echo "Error: scaffold CLI not found" >&2
-        return 1
-    fi
-}
-
 # =============================================================================
 # Environment Variables
 # =============================================================================
