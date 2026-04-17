@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+# macOS bootstrap: install Homebrew + packages this setup depends on.
+# Idempotent. Does NOT create symlinks. Does NOT sync secrets.
+set -euo pipefail
+
+if [[ "$OSTYPE" != "darwin"* ]]; then
+  echo "error: macOS only (got $OSTYPE)" >&2
+  exit 1
+fi
+
+if ! command -v brew >/dev/null 2>&1; then
+  echo "Installing Homebrew…"
+  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+  if [ -x /opt/homebrew/bin/brew ]; then
+    eval "$(/opt/homebrew/bin/brew shellenv)"
+  fi
+fi
+
+echo "Updating Homebrew…"
+brew update
+
+for pkg in git neovim tmux fzf jq keepercommander; do
+  if brew list "$pkg" >/dev/null 2>&1; then
+    echo "✓ $pkg"
+  else
+    echo "→ installing $pkg"
+    brew install "$pkg"
+  fi
+done
+
+echo ""
+echo "Next steps:"
+echo "  bin/link           # create symlinks per manifest.toml"
+echo "  bin/keys sync      # after Keeper records exist, mirror into Keychain"
+echo "  bin/doctor         # sanity check"
