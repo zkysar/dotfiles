@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+# Remove managed symlinks per manifest.toml.
+# Only removes symlinks whose target is inside this repo.
+# Does NOT restore backups (intentional — backups are safety only).
+set -euo pipefail
+
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+MANIFEST="$REPO_ROOT/manifest.toml"
+
+parse_manifest() {
+  awk '
+    /^\[\[link\]\]/ { in_link=1; src=""; dest=""; next }
+    in_link && /^src[[:space:]]*=/  { match($0, /"[^"]*"/); src  = substr($0, RSTART+1, RLENGTH-2) }
+    in_link && /^dest[[:space:]]*=/ {
+      match($0, /"[^"]*"/); dest = substr($0, RSTART+1, RLENGTH-2)
+      if (src != "" && dest != "") print src "\t" dest
+      in_link=0
+    }
+  ' "$MANIFEST"
+}
+
+expand_home() {
+  case "$1" in
+    "~/"*) echo "$HOME/${1:2}" ;;
+    *)     echo "$1" ;;
+  esac
+}
+
+removed=0; skipped=0
+while IFS=$'\t' read -r src dest; do
+  dest_abs="$(expand_home "$dest")"
+  if [ -L "$dest_abs" ]; then
+    target="$(readlink "$dest_abs")"
+    case "$target" in
+      "$REPO_ROOT"/*)
+        rm "$dest_abs"
+        echo "→ removed: $dest"
+        removed=$((removed+1))
+        ;;
+      *)
+        echo "⚠ skip: $dest points to $target (not our repo)"
+        skipped=$((skipped+1))
+        ;;
+    esac
+  fi
+done < <(parse_manifest)
+
+echo ""
+echo "Removed $removed, skipped $skipped. Backups in ~/.dotfiles-backup/ can be restored manually."
