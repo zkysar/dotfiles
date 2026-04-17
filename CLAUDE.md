@@ -8,12 +8,11 @@ file in this repo — the symlink makes them one.
 ## Layout
 
 - `manifest.toml` — source of truth for which repo paths link to which `$HOME` paths
-- `shell/keys.manifest.toml` — names of Keychain entries zshrc exports at shell start
 - `bin/link` — create symlinks. Safe to run repeatedly.
 - `bin/unlink` — remove managed symlinks (does not restore backups)
 - `bin/doctor` — report symlink health and uncommitted drift
 - `bin/bootstrap` — install Homebrew packages
-- `bin/keys` — Keeper ↔ Keychain sync (`list` / `sync` / `add` / `rm`)
+- `bin/keys` — Keeper → Keychain one-way sync (`list` / `sync` / `rm`)
 
 ## Adding a new dotfile category
 
@@ -32,10 +31,15 @@ file in this repo — the symlink makes them one.
 
 Never write a secret value into any file in this repo.
 
-1. `bin/keys add NEW_ENV_VAR "Keeper/record/path"`
-2. The script writes to Keychain and appends the manifest entry.
-3. Manually add the record to Keeper (Commander `record-add` syntax is fiddly).
-4. `bin/keys sync` to verify.
+Convention: Keeper is the source of truth. Any Keeper record whose title
+matches `^[A-Z][A-Z0-9_]+$` (env var style, e.g. `TODOIST_API_TOKEN`) gets
+synced into Keychain and exported by zshrc.
+
+1. Create a record in Keeper with the env var name as the title.
+2. Put the secret in the record's password field.
+3. In your own terminal (Claude is denied from invoking `keeper`): `bin/keys sync`.
+4. The script mirrors to Keychain and writes the names list to `~/.dotfiles-keychain-names`.
+5. Open a new terminal — zshrc exports the new env var automatically.
 
 ## Commit discipline
 

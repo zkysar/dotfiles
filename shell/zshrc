@@ -77,11 +77,12 @@ fi
 # =============================================================================
 # Secrets — read from macOS Keychain (populated by `bin/keys sync`)
 # =============================================================================
-if [ -f "$HOME/projects/dotfiles/shell/keys.manifest.toml" ]; then
+if [ -f "$HOME/.dotfiles-keychain-names" ]; then
     while IFS= read -r _name; do
+        [ -z "$_name" ] && continue
         _val=$(security find-generic-password -s "$_name" -a "$USER" -w 2>/dev/null) || continue
         [ -n "$_val" ] && export "$_name=$_val"
-    done < <(awk -F'"' '/^keychain[[:space:]]*=/ {print $2}' "$HOME/projects/dotfiles/shell/keys.manifest.toml")
+    done < "$HOME/.dotfiles-keychain-names"
     unset _name _val
 fi
 
