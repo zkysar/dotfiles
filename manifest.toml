@@ -44,3 +44,7 @@ dest = "~/.claude/output-styles"
 [[link]]
 src  = "claude/file-templates"
 dest = "~/.claude/file-templates"
+
+[[link]]
+src  = "launchd/com.zachkysar.granola-sync.plist"
+dest = "~/Library/LaunchAgents/com.zachkysar.granola-sync.plist"
