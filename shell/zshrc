@@ -42,14 +42,6 @@ set -o vi
 export KEYTIMEOUT=1
 
 # =============================================================================
-# Terminal Session Management
-# =============================================================================
-# Only auto-attach to tmux if not running in VS Code or Warp
-if command -v tmux &> /dev/null && [ -z "$TMUX" ] && [ -z "$VSCODE_INJECTION" ] && [[ $TERM_PROGRAM != "WarpTerminal" ]] && [[ $TERM_PROGRAM != "ghostty" ]]; then
-    tmux attach-session -t default || tmux new-session -s default
-fi
-
-# =============================================================================
 # FZF Configuration
 # =============================================================================
 if command -v fzf &> /dev/null; then
