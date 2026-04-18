@@ -11,8 +11,21 @@ file in this repo — the symlink makes them one.
 - `bin/link` — create symlinks. Safe to run repeatedly.
 - `bin/unlink` — remove managed symlinks (does not restore backups)
 - `bin/doctor` — report symlink health and uncommitted drift
-- `bin/bootstrap` — install Homebrew packages
+- `bin/bootstrap` — install Homebrew packages and load dotfiles-managed LaunchAgents
 - `bin/keys` — Keeper → Keychain one-way sync (`add` / `list` / `sync` / `rm`)
+
+## Adding a new LaunchAgent
+
+1. Create `launchd/<label>.plist` in the repo (use `com.zachkysar.*` label convention).
+2. Add an entry to `manifest.toml`:
+   ```toml
+   [[link]]
+   src  = "launchd/<label>.plist"
+   dest = "~/Library/LaunchAgents/<label>.plist"
+   ```
+3. Run `bin/link` to create the symlink, then `launchctl load ~/Library/LaunchAgents/<label>.plist`.
+4. On a fresh machine, `bin/bootstrap` handles the load automatically after `bin/link` is run.
+5. Commit.
 
 ## Adding a new dotfile category
 
