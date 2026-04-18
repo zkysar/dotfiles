@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# Run dotfiles self-tests before every commit.
+set -euo pipefail
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+exec "$REPO_ROOT/bin/test"

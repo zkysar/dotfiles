@@ -45,6 +45,15 @@ This creates the Keeper record and syncs to Keychain in one step. Open a new ter
 
 Alternatively, create the Keeper record manually and run `bin/keys sync`.
 
+## Testing
+
+`bin/test` runs three suites: manifest integrity, shell syntax, and secrets scan. It runs automatically as a pre-commit hook (via `core.hooksPath` → `git/hooks/`).
+
+When adding features that touch the manifest, shell files, or introduce new bin scripts with logic, add or extend `bin/test` accordingly. Examples:
+- New `manifest.toml` entry → covered automatically by the manifest integrity suite
+- New shell file in `shell/` → covered automatically by the syntax suite
+- New `bin/` script with meaningful logic → add an integration test case to `bin/test`
+
 ## Commit discipline
 
 A symlink means editing `~/.zshrc` immediately changes `shell/zshrc` in this

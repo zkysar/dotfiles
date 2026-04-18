@@ -1,0 +1,82 @@
+#!/usr/bin/env bash
+# Run repo self-tests: manifest integrity, shell syntax, secrets scan.
+set -euo pipefail
+
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+MANIFEST="$REPO_ROOT/manifest.toml"
+
+pass=0; fail=0
+
+ok()   { echo "  ✓ $*"; pass=$((pass+1)); }
+fail() { echo "  ✗ $*"; fail=$((fail+1)); }
+
+# ---------------------------------------------------------------------------
+# 1. Manifest integrity — every src path must exist in the repo
+# ---------------------------------------------------------------------------
+echo "1. Manifest integrity"
+while IFS= read -r src; do
+  if [ -e "$REPO_ROOT/$src" ]; then
+    ok "$src"
+  else
+    fail "$src (missing from repo)"
+  fi
+done < <(awk '/^src[[:space:]]*=/ { match($0, /"[^"]*"/); print substr($0, RSTART+1, RLENGTH-2) }' "$MANIFEST")
+
+# ---------------------------------------------------------------------------
+# 2. Shell syntax check
+# ---------------------------------------------------------------------------
+echo "2. Shell syntax"
+while IFS= read -r -d '' f; do
+  rel="${f#$REPO_ROOT/}"
+  if zsh -n "$f" 2>/dev/null; then
+    ok "$rel"
+  else
+    fail "$rel (syntax error)"
+  fi
+done < <(find "$REPO_ROOT/shell" -type f -print0)
+
+# ---------------------------------------------------------------------------
+# 3. Secrets scan
+# ---------------------------------------------------------------------------
+echo "3. Secrets scan"
+# Patterns that should never appear in committed files.
+# Excludes: .git/, binary-ish files, and the test script itself.
+secret_patterns=(
+  'sk-[A-Za-z0-9]{20,}'          # OpenAI / Anthropic keys
+  'ghp_[A-Za-z0-9]{36}'          # GitHub personal access tokens
+  'xoxb-[0-9A-Za-z-]+'           # Slack bot tokens
+  'AIza[0-9A-Za-z_-]{35}'        # Google API keys
+  'AKIA[0-9A-Z]{16}'             # AWS access key IDs
+  'password\s*=\s*"[^"]+'        # Literal password assignments
+  '[0-9a-f]{32,64}:[0-9a-f]{32,64}' # colon-joined hex secrets (app passwords etc.)
+)
+
+joined=$(printf '|' ; printf '%s|' "${secret_patterns[@]}" | sed 's/|$//')
+
+hits=$(git -C "$REPO_ROOT" grep -rniE "$joined" \
+  --untracked \
+  -- \
+  ':!.git' \
+  ':!bin/test' \
+  ':!*.png' ':!*.jpg' ':!*.ico' ':!*.lock' \
+  2>/dev/null || true)
+
+if [ -z "$hits" ]; then
+  ok "no secret patterns found"
+else
+  fail "potential secrets detected:"
+  printf '%s\n' "$hits" | sed 's/^/      /'
+fi
+
+# ---------------------------------------------------------------------------
+# Summary
+# ---------------------------------------------------------------------------
+echo ""
+total=$((pass+fail))
+if [ "$fail" -eq 0 ]; then
+  echo "✓ all $total checks passed"
+  exit 0
+else
+  echo "✗ $fail/$total checks failed"
+  exit 1
+fi

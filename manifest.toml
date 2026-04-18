@@ -52,3 +52,7 @@ dest = "~/.claude/file-templates"
 [[link]]
 src  = "shell/completions"
 dest = "~/.zsh/completions"
+
+[[link]]
+src  = "git/hooks"
+dest = "~/.config/git/hooks"
