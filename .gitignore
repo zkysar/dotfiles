@@ -1,6 +1,9 @@
 # Machine-specific Claude settings
 claude/settings.local.json
 
+# Project-level Claude Code runtime directory (session state, local settings)
+.claude/
+
 # Hook secrets (.env pattern already used by pushover-notification.py)
 claude/hooks/.env
 

@@ -60,6 +60,16 @@ you on new terminals. Commit in this repo after editing any tracked dotfile.
 - `claude/mcp-library/.mcp.json` is in-tree if it contains no credentials;
   otherwise it must be gitignored with a `.mcp.json.template` committed.
 
+## Working with git worktrees
+
+Always invoke the `superpowers:using-git-worktrees` skill before creating or using a worktree.
+
+**Dotfiles-specific gotchas:**
+
+- `$HOME` symlinks always point to the **main checkout**, not a worktree. Changes in a worktree are invisible to the live system — you cannot live-test zshrc, MCP configs, or Claude settings from a worktree.
+- **Never run `bin/link` from inside a worktree.** It would re-point all `$HOME` symlinks at the worktree paths, coupling the live system to a branch that may be deleted.
+- Worktrees here are for *structuring and reviewing changes*, not live-testing. Merge to main and relink if a live test is needed.
+
 ## Gotcha: empty source directories
 
 `bin/link` treats any existing path (file or dir, empty or not) as a valid
