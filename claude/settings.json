@@ -80,28 +80,7 @@
   },
   "alwaysThinkingEnabled": true,
   "voiceEnabled": true,
-  "mcpServers": {
-    "email": {
-      "command": "~/.claude/mcp-wrappers/email-mcp",
-      "type": "stdio"
-    },
-    "whoop": {
-      "command": "uv",
-      "args": [
-        "run", "--frozen",
-        "--directory", "/Users/zachkysar/projects/mcp/whoop-mcp",
-        "python", "-m", "src.server"
-      ]
-    },
-    "hevy": {
-      "command": "/Users/zachkysar/.claude/mcp-wrappers/hevy-mcp"
-    },
-    "todoist": {
-      "command": "~/.claude/mcp-wrappers/todoist-mcp",
-      "type": "stdio"
-    }
-  },
-"feedbackSurveyState": {
+  "feedbackSurveyState": {
     "lastShownTime": 1755134822529
   },
   "defaultOutputStyle": "sr-software-developer",
