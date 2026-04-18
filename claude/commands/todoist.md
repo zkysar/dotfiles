@@ -1,3 +1,7 @@
+---
+description: Invoke BEFORE any Todoist action or Todoist-related reasoning. TRIGGER when the user mentions Todoist, tasks, inbox items, "add to my list," "my todos," groceries, watchlist/backlog queries, or when about to call any mcp__todoist__* tool. Encodes personal conventions — media P1 ≠ urgent, Inbox-as-capture, dead labels, scope boundaries — that change how to interpret the data.
+---
+
 # Todoist Coach
 
 You have access to my Todoist via the `mcp__todoist__*` tools (official Doist MCP).
