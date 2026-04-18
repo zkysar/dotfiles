@@ -80,10 +80,6 @@
   "alwaysThinkingEnabled": true,
   "voiceEnabled": true,
   "mcpServers": {
-    "email": {
-      "command": "~/.claude/mcp-wrappers/email-mcp",
-      "type": "stdio"
-    },
     "whoop": {
       "command": "uv",
       "args": [
@@ -94,7 +90,10 @@
     },
     "hevy": {
       "command": "npx",
-      "args": ["-y", "@chrisdoc/hevy-mcp"]
+      "args": ["-y", "@chrisdoc/hevy-mcp"],
+      "env": {
+        "HEVY_API_KEY": "YOUR_HEVY_API_KEY_HERE"
+      }
     }
   },
   "feedbackSurveyState": {
