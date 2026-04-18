@@ -60,3 +60,7 @@ dest = "~/Library/LaunchAgents/com.zachkysar.granola-sync.plist"
 [[link]]
 src  = "git/hooks"
 dest = "~/.config/git/hooks"
+
+[[link]]
+src  = "ghostty/config"
+dest = "~/.config/ghostty/config"
