@@ -15,7 +15,7 @@ The Obsidian CLI (official, shipped in Obsidian 1.8+) replaces both MCPs for all
 
 ## Goal
 
-Claude proactively reaches into the vault during conversations — surfacing relevant notes, checking daily context, writing well-formed notes — without interrupting the user for permissions, and without any MCP server dependency.
+Claude can read and write the vault correctly when explicitly asked — using the right folders, naming conventions, and writing style — without interrupting the user for permissions and without any MCP server dependency. Vault access is **on-demand only**: Claude does not reach into the vault unprompted, especially for private journal and daily notes.
 
 ---
 
@@ -27,11 +27,10 @@ A new section added to `claude/CLAUDE.md` (symlinked to `~/.claude/CLAUDE.md`, g
 
 **Vault path:** `~/Library/Mobile Documents/iCloud~md~obsidian/Documents/main/`
 
-**When to proactively reach into the vault:**
-- At the start of a task, search for relevant notes (`obsidian search`)
-- When a topic, project, or person is mentioned that likely has a note
-- When today's date is relevant, check the daily note
-- When writing a new note or appending, consult the vault's `claude.md` for conventions
+**Access policy:**
+- Only access the vault when the user explicitly asks
+- Do not surface journal or daily notes unprompted — these are private
+- Before any write or create operation, read `<vault>/claude.md` for conventions
 
 **CLI reference table** (the ~10 commands Claude needs):
 
@@ -68,7 +67,7 @@ Add to `permissions.allow`:
 "Bash(obsidian *)"
 ```
 
-This prevents permission prompts on every `obsidian` command, making proactive vault access seamless.
+This prevents permission prompts on every `obsidian` command, making on-demand vault access seamless.
 
 ### 2b. Remove both Obsidian MCPs
 
@@ -100,18 +99,22 @@ The vault already has a conventions file at `<vault>/claude.md`. Rather than a s
 
 ### Expanded `claude.md` content
 
-**Directory structure**
-- `journals/` — daily entries (`YYYY-MM-DD.md`)
-- `inbox/` — new/unsorted capture notes
-- `archive/` — older content
-- `meeting-notes/` — meeting notes (free-form, no strict template)
-- `books/` — book notes and summaries
-- `recipes/` — recipes
-- `music/` — music-related notes and drafts
-- `templates/` — Obsidian templates (do not write here)
-- `japanese/` — language learning notes
-- `Projects/` — project-level notes
-- `Excalidraw/` — diagrams (do not write here)
+**Directory structure — writable (when asked)**
+- `journals/` — daily scratch pad entries (`YYYY-MM-DD.md`); private, stream-of-consciousness
+- `inbox/` — unorganized capture notes
+- `Projects/` — longitudinal project notes, larger arcs of work
+
+**Read-only**
+- `meeting-notes/` — will be Granola-synced; Claude reads only, never writes
+- `Excalidraw/` — active visual thinking tool; never write here
+
+**Dead — never touch**
+- `music/` — abandoned, user moved to Google Docs
+- `books/` — legacy archive
+- `japanese/` — archive
+- Canvas files (`.canvas`) — replaced by Excalidraw
+- `templates/` — Obsidian templates; never write here
+- `archive/` — read-only history
 
 **File naming conventions**
 - All files: `kebab-case.md`
@@ -140,7 +143,10 @@ New notes (non-daily): include `date` and `type` at minimum; add tags if note fi
 - Flat prose over nested bullets for journal entries
 
 **Anti-patterns**
-- Do not create files in `templates/` or `Excalidraw/`
+- Do not access the vault unprompted — especially journals and daily notes (private)
+- Do not write to `templates/`, `Excalidraw/`, `music/`, `books/`, `japanese/`, or `archive/`
+- Do not write to `meeting-notes/` — Granola-synced, read only
+- Do not create `.canvas` files — user has moved to Excalidraw
 - Do not use CamelCase or spaces in filenames
 - Do not add elaborate frontmatter to meeting notes
 - Do not reformat journal entries — preserve the user's raw voice
