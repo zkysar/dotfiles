@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# Reads TODOIST_API_TOKEN from macOS Keychain (synced there by bin/keys) and
+# passes it to @doist/todoist-ai as TODOIST_API_KEY. This avoids putting the
+# key in settings.json while still working when Claude Code isn't launched
+# from a shell that has the full zshrc environment loaded.
+set -euo pipefail
+
+TODOIST_API_KEY=$(security find-generic-password -s TODOIST_API_TOKEN -a "$USER" -w)
+export TODOIST_API_KEY
+
+exec npx -y @doist/todoist-ai

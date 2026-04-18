@@ -94,6 +94,10 @@
     },
     "hevy": {
       "command": "/Users/zachkysar/.claude/mcp-wrappers/hevy-mcp"
+    },
+    "todoist": {
+      "command": "~/.claude/mcp-wrappers/todoist-mcp",
+      "type": "stdio"
     }
   },
 "feedbackSurveyState": {
