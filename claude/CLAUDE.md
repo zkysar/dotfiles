@@ -2,6 +2,32 @@
 
 These apply to every Claude Code session on this machine.
 
+## Obsidian vault
+
+**Vault path:** `~/Library/Mobile Documents/iCloud~md~obsidian/Documents/main/`
+
+**Access policy:**
+- Only access the vault when the user explicitly asks — never proactively
+- Do not surface journal or daily notes unprompted — these are private
+- Before any write or create operation, read `<vault>/claude.md` for conventions
+
+**Obsidian must be running** for the CLI to work (it launches automatically if not).
+
+| Operation | Command |
+|---|---|
+| Search vault | `obsidian search query="<term>"` |
+| Read a note | `obsidian read file="<path or title>"` |
+| Read today's daily note | `obsidian daily:read` |
+| Append to daily note | `obsidian daily:append content="<text>"` |
+| Create a note | `obsidian create name="<title>" content="<body>"` |
+| Append to a note | `obsidian append file="<title>" content="<text>"` |
+| List notes in folder | `obsidian list folder="<folder>"` |
+| Read note metadata | `obsidian read file="<title>" metadata` |
+| Get all tags | `obsidian tags` |
+| Full command reference | `obsidian help` |
+
+---
+
 ## Implementation plans
 
 Save all implementation plans to `~/projects/plans/YYYY-MM-DD-<feature>.md`.
