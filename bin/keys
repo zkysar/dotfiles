@@ -108,6 +108,21 @@ EOF
     echo "Synced $fetched to Keychain (skipped $skipped_dupe dupes). One keeper call."
     ;;
 
+  add)
+    name="${2:-}"
+    value="${3:-}"
+    if [ -z "$name" ] || [ -z "$value" ]; then
+      echo "usage: keys add <NAME> <VALUE>" >&2
+      exit 1
+    fi
+    if ! [[ "$name" =~ ^[A-Z][A-Z0-9_]+$ ]]; then
+      echo "error: NAME must be UPPER_SNAKE_CASE (e.g. MY_API_TOKEN)" >&2
+      exit 1
+    fi
+    keeper record-add -t "$name" --folder "$ENV_FOLDER" -rt login "password=$value"
+    "$0" sync
+    ;;
+
   rm)
     name="${2:-}"
     if [ -z "$name" ]; then echo "usage: keys rm <NAME>" >&2; exit 1; fi
@@ -128,9 +143,10 @@ EOF
     cat >&2 <<EOF
 usage: keys <command>
 
-  list        show each env-var in the names list (present|MISSING in Keychain)
-  sync        pull every ENV_VAR_STYLE-titled Keeper record into Keychain
-  rm NAME     remove from Keychain (Keeper record untouched)
+  add NAME VALUE  create a Keeper record and sync it to Keychain
+  list            show each env-var in the names list (present|MISSING in Keychain)
+  sync            pull every ENV_VAR_STYLE-titled Keeper record into Keychain
+  rm NAME         remove from Keychain (Keeper record untouched)
 
 Adding a key: create a record in Keeper with an env-var-style title
 (e.g., TODOIST_API_TOKEN) and put the value in the password field.
