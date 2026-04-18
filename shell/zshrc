@@ -50,9 +50,9 @@ export KEYTIMEOUT=1
 # FZF Configuration
 # =============================================================================
 if command -v fzf &> /dev/null; then
-    fzf_directory=$(brew --prefix)/Cellar/fzf/$(fzf --version | cut -d ' ' -f 1)
-    [ -f "$fzf_directory/shell/key-bindings.zsh" ] && source "$fzf_directory/shell/key-bindings.zsh"
-    [ -f "$fzf_directory/shell/completion.zsh" ] && source "$fzf_directory/shell/completion.zsh"
+    fzf_directory=/opt/homebrew/Cellar/fzf/$(fzf --version | cut -d ' ' -f 1)
+    zsh-defer source "$fzf_directory/shell/key-bindings.zsh"
+    zsh-defer source "$fzf_directory/shell/completion.zsh"
 fi
 
 # =============================================================================
