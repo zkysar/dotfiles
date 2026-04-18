@@ -29,6 +29,14 @@ for pkg in git neovim tmux fzf jq keepercommander; do
 done
 
 echo ""
+echo "Loading dotfiles-managed LaunchAgents…"
+for plist in ~/Library/LaunchAgents/com.zachkysar.*.plist; do
+  [[ -e "$plist" ]] || continue
+  launchctl load "$plist" 2>/dev/null || true
+  echo "✓ $(basename "$plist")"
+done
+
+echo ""
 echo "Next steps:"
 echo "  bin/link           # create symlinks per manifest.toml"
 echo "  bin/keys sync      # after Keeper records exist, mirror into Keychain"
