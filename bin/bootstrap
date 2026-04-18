@@ -19,7 +19,7 @@ fi
 echo "Updating Homebrew…"
 brew update
 
-for pkg in git neovim tmux fzf jq keepercommander; do
+for pkg in git neovim tmux fzf jq keepercommander gcalcli; do
   if brew list "$pkg" >/dev/null 2>&1; then
     echo "✓ $pkg"
   else
@@ -28,8 +28,18 @@ for pkg in git neovim tmux fzf jq keepercommander; do
   fi
 done
 
+# Bun is required by the claude-mem worker (from a separate tap)
+if ! command -v bun >/dev/null 2>&1; then
+  echo "→ installing bun"
+  brew install oven-sh/bun/bun
+else
+  echo "✓ bun"
+fi
+
 echo ""
 echo "Next steps:"
-echo "  bin/link           # create symlinks per manifest.toml"
-echo "  bin/keys sync      # after Keeper records exist, mirror into Keychain"
-echo "  bin/doctor         # sanity check"
+echo "  bin/link             # create symlinks per manifest.toml"
+echo "  keeper login         # one-time Keeper auth"
+echo "  bin/keys sync        # mirror Keeper records into Keychain"
+echo "  bin/doctor           # sanity check"
+echo "  npx claude-mem start # start the memory worker (http://localhost:37777)"
