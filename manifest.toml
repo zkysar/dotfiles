@@ -22,6 +22,10 @@ src  = "claude/settings.json"
 dest = "~/.claude/settings.json"
 
 [[link]]
+src  = "claude/CLAUDE.md"
+dest = "~/.claude/CLAUDE.md"
+
+[[link]]
 src  = "claude/commands"
 dest = "~/.claude/commands"
 
