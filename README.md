@@ -9,10 +9,10 @@ macOS Keychain (fast, offline).
 ```bash
 git clone https://github.com/zkysar/dotfiles ~/projects/dotfiles
 cd ~/projects/dotfiles
-bin/bootstrap     # Homebrew + packages (git, neovim, tmux, fzf, jq, keepercommander)
-bin/link          # symlink everything into $HOME
+dots bootstrap    # Homebrew + packages (git, neovim, tmux, fzf, jq, keepercommander)
+dots link         # symlink everything into $HOME
 keeper login      # one-time Keeper auth
-bin/keys sync     # pull ENV_VAR_STYLE-titled records from Keeper into Keychain
+dots keys sync    # pull ENV_VAR_STYLE-titled records from Keeper into Keychain
 ```
 
 Open a new terminal. Shell reads secrets from Keychain; Claude Code picks up
@@ -22,23 +22,23 @@ Open a new terminal. Shell reads secrets from Keychain; Claude Code picks up
 
 Keeper is the source of truth. Any Keeper record whose title matches
 `^[A-Z][A-Z0-9_]+$` (env var style, e.g. `TODOIST_API_TOKEN`) is synced to
-Keychain by `bin/keys sync` and exported by zshrc at shell start. No local
+Keychain by `dots keys sync` and exported by zshrc at shell start. No local
 manifest to maintain — create a record in Keeper, run `sync`, open a new
 terminal.
 
 ## Daily use
 
 - Edit any symlinked file — the edit lands in this repo automatically.
-- `bin/doctor` prints drift.
+- `dots doctor` prints drift.
 - Commit in this repo after every meaningful change.
 - New shells show a one-line nag if there's uncommitted drift.
 
 ## Adding things
 
 - **A new dotfile category:** drop it in, add a `[[link]]` to `manifest.toml`,
-  run `bin/link`.
+  run `dots link`.
 - **A new secret:** create a record in Keeper (title = env var name, value in
-  password field), then run `bin/keys sync`. Never write values directly into
+  password field), then run `dots keys sync`. Never write values directly into
   the repo.
 
 See [CLAUDE.md](CLAUDE.md) for more detail.

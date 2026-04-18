@@ -8,11 +8,11 @@ file in this repo — the symlink makes them one.
 ## Layout
 
 - `manifest.toml` — source of truth for which repo paths link to which `$HOME` paths
-- `bin/link` — create symlinks. Safe to run repeatedly.
-- `bin/unlink` — remove managed symlinks (does not restore backups)
-- `bin/doctor` — report symlink health and uncommitted drift
-- `bin/bootstrap` — install Homebrew packages and load dotfiles-managed LaunchAgents
-- `bin/keys` — Keeper → Keychain one-way sync (`add` / `list` / `sync` / `rm`)
+- `dots link` — create symlinks. Safe to run repeatedly.
+- `dots unlink` — remove managed symlinks (does not restore backups)
+- `dots doctor` — report symlink health and uncommitted drift
+- `dots bootstrap` — install Homebrew packages and load dotfiles-managed LaunchAgents
+- `dots keys` — Keeper → Keychain one-way sync (`add` / `list` / `sync` / `rm`)
 
 ## Adding a new LaunchAgent
 
@@ -23,8 +23,8 @@ file in this repo — the symlink makes them one.
    src  = "launchd/<label>.plist"
    dest = "~/Library/LaunchAgents/<label>.plist"
    ```
-3. Run `bin/link` to create the symlink, then `launchctl load ~/Library/LaunchAgents/<label>.plist`.
-4. On a fresh machine, `bin/bootstrap` handles the load automatically after `bin/link` is run.
+3. Run `dots link` to create the symlink, then `launchctl load ~/Library/LaunchAgents/<label>.plist`.
+4. On a fresh machine, `dots bootstrap` handles the load automatically after `dots link` is run.
 5. Commit.
 
 ## Adding a new dotfile category
@@ -37,7 +37,7 @@ file in this repo — the symlink makes them one.
    src  = "vscode/settings.json"
    dest = "~/Library/Application Support/Code/User/settings.json"
    ```
-4. Run `bin/link`.
+4. Run `dots link`.
 5. Commit.
 
 ## Adding a new secret
@@ -51,12 +51,12 @@ synced into Keychain and exported by zshrc.
 In your own terminal (Claude is denied from invoking `keeper`):
 
 ```bash
-bin/keys add MY_SECRET_NAME secretvalue
+dots keys add MY_SECRET_NAME secretvalue
 ```
 
 This creates the Keeper record and syncs to Keychain in one step. Open a new terminal — zshrc exports the new env var automatically.
 
-Alternatively, create the Keeper record manually and run `bin/keys sync`.
+Alternatively, create the Keeper record manually and run `dots keys sync`.
 
 ## Testing
 
@@ -70,7 +70,7 @@ When adding features that touch the manifest, shell files, or introduce new bin 
 ## Commit discipline
 
 A symlink means editing `~/.zshrc` immediately changes `shell/zshrc` in this
-repo. Check `bin/doctor` or `git status` regularly — the shell nag will remind
+repo. Check `dots doctor` or `git status` regularly — the shell nag will remind
 you on new terminals. Commit in this repo after editing any tracked dotfile.
 
 ## Secrets policy
@@ -89,13 +89,13 @@ Always invoke the `superpowers:using-git-worktrees` skill before creating or usi
 **Dotfiles-specific gotchas:**
 
 - `$HOME` symlinks always point to the **main checkout**, not a worktree. Changes in a worktree are invisible to the live system — you cannot live-test zshrc, MCP configs, or Claude settings from a worktree.
-- **Never run `bin/link` from inside a worktree.** It would re-point all `$HOME` symlinks at the worktree paths, coupling the live system to a branch that may be deleted.
+- **Never run `dots link` from inside a worktree.** It would re-point all `$HOME` symlinks at the worktree paths, coupling the live system to a branch that may be deleted.
 - Worktrees here are for *structuring and reviewing changes*, not live-testing. Merge to main and relink if a live test is needed.
 
 ## Gotcha: empty source directories
 
-`bin/link` treats any existing path (file or dir, empty or not) as a valid
+`dots link` treats any existing path (file or dir, empty or not) as a valid
 source. If you create a repo category directory but haven't populated it,
-running `bin/link` will still back up the live target and symlink it to the
+running `dots link` will still back up the live target and symlink it to the
 empty repo dir — appearing to wipe the live content (the real data is safely
 in `~/.dotfiles-backup/<ts>/`). Populate repo dirs first, then link.

@@ -66,7 +66,7 @@ if [ "$QUIET" = 1 ]; then
     parts=""
     [ "$bad" -gt 0 ]       && parts="${parts}${bad} symlink issue(s) "
     [ "$git_count" -gt 0 ] && parts="${parts}${git_count} uncommitted change(s)"
-    echo "dotfiles: ${parts}— run 'bin/doctor' for detail"
+    echo "dotfiles: ${parts}— run 'dots doctor' for detail"
     exit 1
   fi
   exit 0

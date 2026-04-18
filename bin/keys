@@ -20,7 +20,7 @@ cmd="${1:-}"
 case "$cmd" in
   list)
     if [ ! -f "$NAMES_FILE" ]; then
-      echo "No names list yet. Run 'bin/keys sync' to populate." >&2
+      echo "No names list yet. Run 'dots keys sync' to populate." >&2
       exit 0
     fi
     while IFS= read -r name; do
@@ -35,11 +35,11 @@ case "$cmd" in
 
   sync)
     if ! command -v keeper >/dev/null 2>&1; then
-      echo "error: keepercommander not installed. Run bin/bootstrap first." >&2
+      echo "error: keepercommander not installed. Run dots bootstrap first." >&2
       exit 1
     fi
     if ! command -v jq >/dev/null 2>&1; then
-      echo "error: jq not installed. Run bin/bootstrap first." >&2
+      echo "error: jq not installed. Run dots bootstrap first." >&2
       exit 1
     fi
 
@@ -64,7 +64,7 @@ case "$cmd" in
   needs to be refreshed. Run this in your terminal, then retry:
 
       keeper login
-      bin/keys sync
+      dots keys sync
 
 EOF
       exit 2
@@ -150,7 +150,7 @@ usage: keys <command>
 
 Adding a key: create a record in Keeper with an env-var-style title
 (e.g., TODOIST_API_TOKEN) and put the value in the password field.
-Then run 'bin/keys sync'. No local manifest to edit.
+Then run 'dots keys sync'. No local manifest to edit.
 EOF
     exit 1
     ;;

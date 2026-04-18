@@ -38,6 +38,6 @@ done
 
 echo ""
 echo "Next steps:"
-echo "  bin/link           # create symlinks per manifest.toml"
-echo "  bin/keys sync      # after Keeper records exist, mirror into Keychain"
-echo "  bin/doctor         # sanity check"
+echo "  dots link           # create symlinks per manifest.toml"
+echo "  dots keys sync      # after Keeper records exist, mirror into Keychain"
+echo "  dots doctor         # sanity check"
