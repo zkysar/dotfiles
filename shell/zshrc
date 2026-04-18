@@ -70,17 +70,23 @@ fi
 # =============================================================================
 # Auto Complete configuration
 # =============================================================================
-fpath=("$HOME/.zsh/completions" $fpath)
+_ensure_completion() {
+    local cmd=$1 file=$2; shift 2
+    [[ -x ${commands[$cmd]} ]] || return
+    [[ -f $file && $file -nt ${commands[$cmd]} ]] && return
+    mkdir -p "${file:h}"
+    $cmd "$@" >| $file
+}
+_ensure_completion kubectl "$HOME/.cache/zsh/completions/_kubectl" completion zsh
+_ensure_completion gh     "$HOME/.cache/zsh/completions/_gh"     completion -s zsh
+
+fpath=("$HOME/.zsh/completions" "$HOME/.cache/zsh/completions" $fpath)
 # Terraform
 autoload -U +X compinit && compinit
-source <(kubectl completion zsh)
 autoload -U +X bashcompinit && bashcompinit
 complete -o nospace -C /opt/homebrew/bin/terraform terraform
 
-# GitHub CLI
-if command -v gh &> /dev/null; then
-    eval "$(gh completion -s zsh)"
-fi
+# GitHub CLI — loaded via _ensure_completion above
 
 # GitHub Issue Manager
 if [ -f /Users/zachkysar/git/claude-tools/gh-issue-manager/completions/gh-issue-manager.zsh ]; then
