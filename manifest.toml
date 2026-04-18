@@ -52,3 +52,7 @@ dest = "~/.claude/file-templates"
 [[link]]
 src  = "shell/completions"
 dest = "~/.zsh/completions"
+
+[[link]]
+src  = "launchd/com.zachkysar.granola-sync.plist"
+dest = "~/Library/LaunchAgents/com.zachkysar.granola-sync.plist"
