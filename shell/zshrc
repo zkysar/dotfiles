@@ -2,6 +2,7 @@
 # PATH Configuration
 # =============================================================================
 export PATH="$PATH:/opt/homebrew/bin"
+export PATH="$HOME/projects/dotfiles/bin:$PATH"  # assumes repo lives at ~/projects/dotfiles
 export PATH="$PATH:/Users/zachkysar/.lmstudio/bin"
 export PATH="$PATH:/Users/zachkysar/Library/Python/3.9/bin"
 export PATH="$PATH:/Applications/Visual Studio Code.app/Contents/Resources/app/bin"
@@ -72,6 +73,7 @@ fi
 # =============================================================================
 # Auto Complete configuration
 # =============================================================================
+fpath=("$HOME/.zsh/completions" $fpath)
 # Terraform
 autoload -U +X compinit && compinit
 source <(kubectl completion zsh)

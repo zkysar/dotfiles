@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+DOTS_BIN="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+usage() {
+  cat <<EOF
+Usage: dots <subcommand> [args...]
+
+Subcommands:
+  link        Create HOME symlinks from manifest.toml
+  unlink      Remove managed symlinks
+  doctor      Report symlink health and uncommitted drift
+  bootstrap   Install Homebrew packages
+  keys        Keeper → Keychain sync (add / list / sync / rm)
+EOF
+}
+
+case "${1:-}" in
+  link|unlink|doctor|bootstrap|keys)
+    cmd="$1"; shift
+    exec "$DOTS_BIN/$cmd" "$@"
+    ;;
+  --help|-h)
+    usage
+    ;;
+  "")
+    usage >&2; exit 1
+    ;;
+  *)
+    echo "dots: unknown subcommand '$1'" >&2
+    echo "" >&2
+    usage >&2
+    exit 1
+    ;;
+esac

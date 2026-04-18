@@ -44,3 +44,7 @@ dest = "~/.claude/output-styles"
 [[link]]
 src  = "claude/file-templates"
 dest = "~/.claude/file-templates"
+
+[[link]]
+src  = "shell/completions"
+dest = "~/.zsh/completions"

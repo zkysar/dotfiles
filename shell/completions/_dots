@@ -1,0 +1,25 @@
+#compdef dots
+
+_dots() {
+  local subcommands=(
+    'link:create HOME symlinks from manifest.toml'
+    'unlink:remove managed symlinks'
+    'doctor:report symlink health and uncommitted drift'
+    'bootstrap:install Homebrew packages'
+    'keys:Keeper → Keychain sync'
+  )
+
+  if (( CURRENT == 2 )); then
+    _describe 'subcommand' subcommands
+  elif (( CURRENT >= 3 )) && [[ ${words[2]} == keys ]]; then
+    local keys_cmds=(
+      'add:add a secret to Keeper and Keychain'
+      'list:list synced keys'
+      'sync:pull all Keeper records into Keychain'
+      'rm:remove a key'
+    )
+    _describe 'keys subcommand' keys_cmds
+  fi
+}
+
+_dots "$@"
