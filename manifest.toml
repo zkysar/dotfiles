@@ -56,3 +56,7 @@ dest = "~/.zsh/completions"
 [[link]]
 src  = "launchd/com.zachkysar.granola-sync.plist"
 dest = "~/Library/LaunchAgents/com.zachkysar.granola-sync.plist"
+
+[[link]]
+src  = "git/hooks"
+dest = "~/.config/git/hooks"
