@@ -45,37 +45,6 @@ This creates the Keeper record and syncs to Keychain in one step. Open a new ter
 
 Alternatively, create the Keeper record manually and run `bin/keys sync`.
 
-## Claude's email and calendar
-
-Claude has a dedicated Google account (`zachkysar.claude@gmail.com`) for sending
-email and managing calendar events.
-
-**Email** — available via the `email` MCP server (configured in `settings.json`).
-The MCP is backed by `codefuturist/email-mcp`. Credentials are read from Keychain
-at startup via `claude/mcp-wrappers/email-mcp`; no secrets in settings.
-
-**Calendar** — use gcalcli with the dedicated config folder:
-
-```bash
-gcalcli --config-folder ~/.gcalcli-claude agenda
-gcalcli --config-folder ~/.gcalcli-claude add
-```
-
-The config folder is tracked in dotfiles at `claude/gcalcli/` → `~/.gcalcli-claude`.
-The OAuth token (`oauth2.json`) is gitignored. To authenticate on a new machine:
-
-```bash
-gcalcli --config-folder ~/.gcalcli-claude init
-# authenticate as zachkysar.claude@gmail.com
-```
-
-Claude's calendar is shared with `zach.kysar@gmail.com` so events appear in
-Fantastical.
-
-**Credentials:**
-- App password: `CLAUDE_GMAIL_APP_PASSWORD` in Keychain (synced via `bin/keys`)
-- Wrapper: `claude/mcp-wrappers/email-mcp` → `~/.claude/mcp-wrappers/email-mcp`
-
 ## Commit discipline
 
 A symlink means editing `~/.zshrc` immediately changes `shell/zshrc` in this

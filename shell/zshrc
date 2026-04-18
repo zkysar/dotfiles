@@ -101,3 +101,5 @@ export OLLAMA_MAX_LOADED_MODELS=2
 if [ -x "$HOME/projects/dotfiles/bin/doctor" ]; then
     "$HOME/projects/dotfiles/bin/doctor" --quiet
 fi
+
+alias claude-mem='bun "/Users/zachkysar/.claude/plugins/cache/thedotmack/claude-mem/12.1.6/scripts/worker-service.cjs"'

@@ -88,16 +88,15 @@
       "command": "uv",
       "args": [
         "run", "--frozen",
-        "--directory", "~/projects/mcp/whoop-mcp",
-        "start"
+        "--directory", "/Users/zachkysar/projects/mcp/whoop-mcp",
+        "python", "-m", "src.server"
       ]
     },
     "hevy": {
-      "command": "npx",
-      "args": ["-y", "@chrisdoc/hevy-mcp"]
+      "command": "/Users/zachkysar/.claude/mcp-wrappers/hevy-mcp"
     }
   },
-  "feedbackSurveyState": {
+"feedbackSurveyState": {
     "lastShownTime": 1755134822529
   },
   "defaultOutputStyle": "sr-software-developer",
