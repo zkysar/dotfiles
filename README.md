@@ -9,7 +9,7 @@ macOS Keychain (fast, offline).
 ```bash
 git clone https://github.com/zkysar/dotfiles ~/projects/dotfiles
 cd ~/projects/dotfiles
-bin/bootstrap     # Homebrew + packages (git, neovim, tmux, fzf, jq, keepercommander)
+bin/bootstrap     # Homebrew + packages (git, neovim, tmux, fzf, jq, keepercommander, gcalcli, bun)
 bin/link          # symlink everything into $HOME
 keeper login      # one-time Keeper auth
 bin/keys sync     # pull ENV_VAR_STYLE-titled records from Keeper into Keychain
@@ -17,6 +17,40 @@ bin/keys sync     # pull ENV_VAR_STYLE-titled records from Keeper into Keychain
 
 Open a new terminal. Shell reads secrets from Keychain; Claude Code picks up
 `~/.claude/*` via the symlinks.
+
+Start the claude-mem memory worker so Claude retains context across sessions:
+
+```bash
+npx claude-mem start   # runs on http://localhost:37777
+```
+
+## Claude Code setup
+
+Claude Code config lives under `claude/` and symlinks into `~/.claude/`:
+
+| Directory | Purpose |
+|-----------|---------|
+| `claude/settings.json` | Permissions, hooks, plugins, MCP servers |
+| `claude/hooks/` | Hook scripts (custom-reminder.py, pushover, etc.) |
+| `claude/mcp-wrappers/` | Credential-free MCP launcher scripts (read from Keychain) |
+| `claude/commands/` | Slash commands |
+| `claude/agents-library/` | Reusable subagent definitions |
+
+### MCP servers
+
+Three MCP servers are pre-configured in `settings.json`:
+
+- **email** — Claude's dedicated Gmail account (`zachkysar.claude@gmail.com`). Requires `CLAUDE_GMAIL_APP_PASSWORD` in Keychain.
+- **whoop** — WHOOP fitness data via `~/projects/mcp/whoop-mcp`.
+- **hevy** — Hevy workout tracker via `@chrisdoc/hevy-mcp` (npx).
+
+Add new servers by editing `claude/settings.json` or via `.mcp.json` in individual project repos.
+
+### Adding an MCP wrapper
+
+For servers that need credentials: add a launcher script to `claude/mcp-wrappers/`,
+pull the secret from Keychain (`security find-generic-password`), and reference the
+script in `mcpServers`. Never write credentials directly into `settings.json`.
 
 ## Secrets model
 
