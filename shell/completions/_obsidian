@@ -1,0 +1,57 @@
+#compdef obsidian
+
+# Obsidian CLI zsh completion
+# Powered by `obsidian __completions` JSON output
+
+_obsidian() {
+  local state line curcontext="$curcontext"
+  typeset -A opt_args
+
+  _arguments -C \
+    '1: :->command' \
+    '*: :->flags'
+
+  case $state in
+    command)
+      _obsidian_commands
+      ;;
+    flags)
+      _obsidian_flags "$line[1]"
+      ;;
+  esac
+}
+
+_obsidian_commands() {
+  local -a cmds
+  local completion_json
+
+  # Obsidian prints loader lines to stdout; grep to the JSON object line
+  completion_json=$(obsidian __completions 2>/dev/null | grep '^{') || return 1
+
+  while IFS= read -r entry; do
+    cmds+=("$entry")
+  done < <(echo "$completion_json" | jq -r 'to_entries[] | "\(.key):\(.value.description)"')
+
+  _describe 'obsidian command' cmds
+}
+
+_obsidian_flags() {
+  local cmd="$1"
+  local completion_json flags_json
+  local -a flags
+
+  [[ -z "$cmd" ]] && return 0
+
+  completion_json=$(obsidian __completions 2>/dev/null | grep '^{') || return 0
+  flags_json=$(echo "$completion_json" | jq -r --arg cmd "$cmd" '.[$cmd].flags // {} | to_entries[] | "\(.key):\(.value.description)"' 2>/dev/null)
+
+  [[ -z "$flags_json" ]] && return 0
+
+  while IFS= read -r entry; do
+    flags+=("$entry")
+  done < <(echo "$flags_json")
+
+  _describe "flags for $cmd" flags
+}
+
+_obsidian
