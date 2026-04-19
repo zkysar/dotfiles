@@ -41,13 +41,21 @@ This overrides the default in `superpowers:writing-plans` (which saves to
 
 ## MCP server config
 
-MCP servers are registered in `~/.claude.json` (machine-state, not dotfiles-tracked).
-The dotfiles repo manages the **wrapper scripts** in `claude/mcp-wrappers/` —
-those are what `~/.claude.json` entries point to. Do NOT add `mcpServers` blocks
-to `~/.claude/settings.json` (the dotfiles-managed file) — Claude Code does not
-read MCP config from there, the entries are silently ignored.
+MCPs must be registered in **two places**:
+
+1. **`~/.claude.json`** — read by Claude Code (CLI). Edit directly; not dotfiles-tracked.
+2. **`~/Library/Application Support/Claude/claude_desktop_config.json`** — read by Claude Desktop and by Claude Cowork. Cowork bridges Desktop's stdio MCPs into the Cowork VM via an SDK bridge, so any MCP you want available in Cowork must be in the Desktop config. Code-only MCPs (registered only in `~/.claude.json`) do not appear in Cowork.
+
+Wrapper scripts live in `claude/mcp-wrappers/` in this repo (version-controlled) and are symlinked to `~/.claude/mcp-wrappers/` via `manifest.toml` + `dots link`.
+
+**Paths in both config files must be absolute** — use `/Users/zachkysar/.claude/mcp-wrappers/<name>`, not `~`. Desktop does not reliably expand `~`.
+
+**Keep both configs in sync manually.** There is no automation — the convention is: if it's in `~/.claude.json`, it should also be in the Desktop config, and vice versa.
 
 To add a new MCP:
-1. Drop a wrapper script in `claude/mcp-wrappers/<name>` (commit to dotfiles)
-2. Edit `~/.claude.json` directly to add the `mcpServers.<name>` entry pointing
-   to `~/.claude/mcp-wrappers/<name>`
+1. Drop a wrapper script in `claude/mcp-wrappers/<name>` and commit.
+2. Add the `mcpServers.<name>` entry (with absolute path) to `~/.claude.json`.
+3. Add the same entry to `~/Library/Application Support/Claude/claude_desktop_config.json`.
+4. Quit and reopen Claude Desktop.
+
+Do NOT add `mcpServers` blocks to `~/.claude/settings.json` — Claude Code does not read MCP config from there; entries are silently ignored.
