@@ -42,6 +42,10 @@ src  = "claude/mcp-library"
 dest = "~/.claude/mcp-library"
 
 [[link]]
+src  = "claude/mcp-wrappers"
+dest = "~/.claude/mcp-wrappers"
+
+[[link]]
 src  = "claude/output-styles"
 dest = "~/.claude/output-styles"
 

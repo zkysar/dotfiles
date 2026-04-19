@@ -15,6 +15,7 @@ claude/**/*.log
 # Editor/OS noise
 .DS_Store
 nvim/.netrwhist
+nvim/lazy-lock.json
 
 # Backups created by bin/link (stored at $HOME, not in repo, but guard anyway)
 .dotfiles-backup/
