@@ -68,3 +68,11 @@ dest = "~/.config/git/hooks"
 [[link]]
 src  = "ghostty/config"
 dest = "~/.config/ghostty/config"
+
+[[link]]
+src  = "launchd/com.zachkysar.tmp-sweep.plist"
+dest = "~/Library/LaunchAgents/com.zachkysar.tmp-sweep.plist"
+
+[[link]]
+src  = "tmp/CLAUDE.md"
+dest = "~/tmp/CLAUDE.md"
