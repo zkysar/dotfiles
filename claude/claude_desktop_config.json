@@ -1,0 +1,74 @@
+{
+  "mcpServers": {
+    "obsidian": {
+      "command": "node",
+      "args": [
+        "/Users/zachkysar/mcp/piotr-mcp-obsidian/src/index.js",
+        "/Users/zachkysar/Library/Mobile Documents/iCloud~md~obsidian/Documents/main"
+      ],
+      "env": {}
+    },
+    "context7": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@upstash/context7-mcp"
+      ],
+      "env": {}
+    },
+    "mermaid": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-mermaid"
+      ],
+      "env": {}
+    },
+    "davinci-resolve": {
+      "command": "/opt/homebrew/bin/python3.12",
+      "args": [
+        "/Users/zachkysar/projects/mcp/davinci-mcp/scripts/mcp_proxy.py"
+      ],
+      "env": {
+        "PATH": "/Users/zachkysar/.local/bin:/usr/local/bin:/usr/bin:/bin"
+      }
+    },
+    "whoop": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--frozen",
+        "--directory",
+        "/Users/zachkysar/projects/mcp/whoop-mcp",
+        "python",
+        "-m",
+        "src.server"
+      ],
+      "env": {}
+    },
+    "hevy": {
+      "command": "/Users/zachkysar/.claude/mcp-wrappers/hevy-mcp",
+      "env": {}
+    },
+    "todoist": {
+      "command": "/Users/zachkysar/.claude/mcp-wrappers/todoist-mcp",
+      "env": {}
+    }
+  },
+  "preferences": {
+    "menuBarEnabled": false,
+    "quickEntryShortcut": "off",
+    "quickEntryDictationShortcut": {
+      "accelerator": "Shift+Ctrl+Cmd+C"
+    },
+    "localAgentModeTrustedFolders": [
+      "/Users/zachkysar/projects/personal"
+    ],
+    "coworkScheduledTasksEnabled": true,
+    "ccdScheduledTasksEnabled": true,
+    "sidebarMode": "task",
+    "dockBounceEnabled": true,
+    "coworkWebSearchEnabled": true,
+    "chicagoEnabled": true
+  }
+}
