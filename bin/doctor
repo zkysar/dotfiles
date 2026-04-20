@@ -82,6 +82,15 @@ fi
 if [ "$git_count" -gt 0 ]; then
   echo "✗ $git_count uncommitted changes:"
   printf '%s\n' "$git_status" | sed 's/^/  /'
+  git_diff="$(git diff HEAD --color=always 2>/dev/null || true)"
+  if [ -n "$git_diff" ]; then
+    diff_lines=$(printf '%s\n' "$git_diff" | wc -l | tr -d ' ')
+    term_lines=$(tput lines 2>/dev/null || echo 40)
+    if [ "$diff_lines" -le "$term_lines" ]; then
+      echo ""
+      printf '%s\n' "$git_diff"
+    fi
+  fi
 else
   echo "✓ no uncommitted changes"
 fi
