@@ -4,7 +4,7 @@ These apply to every Claude Code session on this machine.
 
 ## Obsidian vault
 
-**Vault path:** `~/Library/Mobile Documents/iCloud~md~obsidian/Documents/main/`
+**Vault path:** `~/projects/obsidian/vault/`
 
 **Access policy:**
 - Only access the vault when the user explicitly asks — never proactively
