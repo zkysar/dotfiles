@@ -27,6 +27,15 @@ file in this repo — the symlink makes them one.
 4. On a fresh machine, `dots bootstrap` handles the load automatically after `dots link` is run.
 5. Commit.
 
+## Adding a shell function
+
+Shell functions live in `shell/functions/`, one file per function (`<name>.zsh`). `zshrc` auto-sources every `*.zsh` file in that directory — drop a file in and it's available on next shell start. No `manifest.toml` entry needed; files are sourced directly from the repo path.
+
+1. Create `shell/functions/<name>.zsh` with the function definition.
+2. Commit.
+
+The syntax checker (`bin/test` suite 2) covers `shell/functions/` automatically via `find shell/ -type f`.
+
 ## Adding a new dotfile category
 
 1. Create a top-level dir for the category (e.g. `vscode/`).
