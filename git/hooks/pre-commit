@@ -1,6 +1,13 @@
 #!/usr/bin/env bash
-# Run dotfiles self-tests before every commit.
+# Global pre-commit hook (core.hooksPath).
+# Delegates to a repo-local hook at <repo>/.githooks/pre-commit if present.
+# Otherwise exits silently — do not block commits in repos that don't opt in.
 set -euo pipefail
 
-REPO_ROOT="$(git rev-parse --show-toplevel)"
-exec "$REPO_ROOT/bin/test"
+REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || true)"
+[ -n "$REPO_ROOT" ] || exit 0
+
+LOCAL_HOOK="$REPO_ROOT/.githooks/pre-commit"
+[ -x "$LOCAL_HOOK" ] || exit 0
+
+exec "$LOCAL_HOOK" "$@"
