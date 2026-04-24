@@ -13,6 +13,7 @@ file in this repo — the symlink makes them one.
 - `dots doctor` — report symlink health and uncommitted drift
 - `dots bootstrap` — install Homebrew packages and load dotfiles-managed LaunchAgents
 - `dots keys` — Keeper → Keychain one-way sync (`add` / `list` / `sync` / `rm`)
+- `dots push` — push pending commits on the current branch to origin
 
 ## Adding a new LaunchAgent
 
@@ -81,6 +82,10 @@ When adding features that touch the manifest, shell files, or introduce new bin 
 A symlink means editing `~/.zshrc` immediately changes `shell/zshrc` in this
 repo. Check `dots doctor` or `git status` regularly — the shell nag will remind
 you on new terminals. Commit in this repo after editing any tracked dotfile.
+
+**Always push after committing.** This repo is the source of truth across
+machines, and unpushed commits leave other machines drifting. Run `dots push`
+(or `git push`) immediately after every commit — don't batch.
 
 ## Secrets policy
 

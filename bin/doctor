@@ -73,12 +73,20 @@ clean=1
 
 if [ "$QUIET" = 1 ]; then
   if [ "$clean" = 0 ]; then
-    parts=""
-    [ "$bad" -gt 0 ]       && parts="${parts}${bad} symlink issue(s) "
-    [ "$git_count" -gt 0 ] && parts="${parts}${git_count} uncommitted change(s) "
-    [ "$ahead" -gt 0 ]     && parts="${parts}${ahead} unpushed commit(s) "
-    [ "$behind" -gt 0 ]    && parts="${parts}${behind} commit(s) behind remote "
-    echo "dotfiles: ${parts}— run 'dots doctor' for detail"
+    only_unpushed=0
+    if [ "$ahead" -gt 0 ] && [ "$bad" -eq 0 ] && [ "$git_count" -eq 0 ] && [ "$behind" -eq 0 ]; then
+      only_unpushed=1
+    fi
+    if [ "$only_unpushed" = 1 ]; then
+      echo "dotfiles: ${ahead} unpushed commit(s) — run 'dots push' to push"
+    else
+      parts=""
+      [ "$bad" -gt 0 ]       && parts="${parts}${bad} symlink issue(s) "
+      [ "$git_count" -gt 0 ] && parts="${parts}${git_count} uncommitted change(s) "
+      [ "$ahead" -gt 0 ]     && parts="${parts}${ahead} unpushed commit(s) "
+      [ "$behind" -gt 0 ]    && parts="${parts}${behind} commit(s) behind remote "
+      echo "dotfiles: ${parts}— run 'dots doctor' for detail"
+    fi
     exit 1
   fi
   exit 0
@@ -108,7 +116,7 @@ else
 fi
 
 if [ "$ahead" -gt 0 ]; then
-  echo "✗ $ahead unpushed commit(s) ahead of origin/$default_branch:"
+  echo "✗ $ahead unpushed commit(s) ahead of origin/$default_branch (run: dots push):"
   git log --oneline "origin/$default_branch..HEAD" 2>/dev/null | sed 's/^/  /'
 else
   echo "✓ in sync with origin/$default_branch"

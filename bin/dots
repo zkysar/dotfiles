@@ -13,11 +13,12 @@ Subcommands:
   doctor      Report symlink health and uncommitted drift
   bootstrap   Install Homebrew packages
   keys        Keeper → Keychain sync (add / list / sync / rm)
+  push        Push pending commits on the current branch to origin
 EOF
 }
 
 case "${1:-}" in
-  link|unlink|doctor|bootstrap|keys)
+  link|unlink|doctor|bootstrap|keys|push)
     cmd="$1"; shift
     exec "$DOTS_BIN/$cmd" "$@"
     ;;

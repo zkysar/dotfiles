@@ -7,6 +7,7 @@ _dots() {
     'doctor:report symlink health and uncommitted drift'
     'bootstrap:install Homebrew packages'
     'keys:Keeper → Keychain sync'
+    'push:push pending commits to origin'
   )
 
   if (( CURRENT == 2 )); then
