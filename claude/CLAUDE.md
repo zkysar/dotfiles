@@ -59,3 +59,25 @@ To add a new MCP:
 4. Quit and reopen Claude Desktop.
 
 Do NOT add `mcpServers` blocks to `~/.claude/settings.json` — Claude Code does not read MCP config from there; entries are silently ignored.
+
+## Dotfiles
+
+Dotfiles repo: `~/projects/dotfiles/`. Many paths under `$HOME` (shell, tmux,
+nvim, git, claude/, launchd plists, etc.) are symlinks into it. `manifest.toml`
+in the repo is the authoritative list.
+
+**Before editing any config in `$HOME`:** run `readlink -f <path>`. If it
+resolves into `~/projects/dotfiles/`, edit the repo source and commit there —
+don't edit the `$HOME` path as if it were standalone.
+
+**Before writing a new config file in `$HOME`:** ask whether it should live in
+the dotfiles repo (tracked via `manifest.toml` + `dots link`) before creating
+it at the `$HOME` path. Default to asking — most durable configs belong in the
+repo.
+
+**Secrets:** API keys, tokens, and passwords are stored in Keeper (source of
+truth), synced one-way into macOS Keychain, and exported as env vars by zshrc
+at shell startup. Never write a secret into any file. Claude is denied from
+invoking `keeper` directly — when a new secret is needed, ask the user to run
+`dots keys add NAME value` in their own terminal. See the dotfiles repo
+CLAUDE.md for the full flow.
