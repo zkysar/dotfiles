@@ -54,6 +54,14 @@ src  = "claude/file-templates"
 dest = "~/.claude/file-templates"
 
 [[link]]
+src  = "claude/skills"
+dest = "~/.claude/skills"
+
+[[link]]
+src  = "claude/context"
+dest = "~/.claude/context"
+
+[[link]]
 src  = "shell/completions"
 dest = "~/.zsh/completions"
 
