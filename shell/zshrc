@@ -46,6 +46,12 @@ export DO_NOT_TRACK=1
 export CRUSH_DISABLE_METRICS=1
 
 # =============================================================================
+# claude-mem — use Haiku for session summarization (faster Stop hook)
+# Default is claude-sonnet-4-6, which can hang the Stop hook 10–30s+ per turn
+# =============================================================================
+export CLAUDE_MEM_MODEL=claude-haiku-4-5
+
+# =============================================================================
 # Vi Mode Configuration
 # =============================================================================
 # Enable vi mode in zsh
