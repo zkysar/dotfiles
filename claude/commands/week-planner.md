@@ -57,6 +57,11 @@ Gaps here mean **buffer/transition time**, not "free unbooked slots":
   blocks where it makes sense.
 - **Reverse coherence:** calendar events that look like project work but
   have no Todoist project/tasks → flag the missing tracking.
+- **Scheduleable tasks:** scan Todoist for tasks that imply needing a
+  calendar block (errands, focus work, prep blocks, calls, appointments).
+  **First filter against the "Tasks to never auto-schedule" list** in
+  `~/.claude/context/personal.md`. Anything not excluded becomes a
+  scheduling candidate to propose during the confirmation walk.
 
 ### Fitness/meals
 Source the rules from `~/.claude/context/personal.md` (Fitness section).
@@ -100,6 +105,27 @@ multiple changes into one question.
 - Clarifications: update task title/description
 - New tasks: when adding to track calendar work
 - Label fixes: when deprecated labels surface (only with explicit "okay")
+
+### Schedule-then-bump-due-date
+When a Todoist task gets scheduled into the calendar (per the "Scheduleable
+tasks" analysis), do this in sequence with separate confirmations:
+
+1. Propose the calendar block: "I'm going to add a 45-min block Wednesday
+   2pm for <task>. Okay?"
+2. After the calendar event lands, propose the due-date bump:
+   "Now I'll move <task>'s Todoist due date to <day after the scheduled
+   end>, so you can confirm you actually did it. Okay?"
+3. On approval, `update-tasks` with the new dueString.
+
+Rationale: the bump turns the task into a self-check Zach sees the next
+day — if it's still incomplete, he knows the calendar block didn't
+actually translate into doing the thing.
+
+### Rejection capture
+If Zach rejects a scheduling proposal AND the rejection sounds categorical
+(not just "not this week" but "PT shouldn't ever be scheduled"), ask:
+"Want me to add <category> to the 'Tasks to never auto-schedule' list in
+your personal context? It would say: <exact text>." Edit on confirmation.
 
 ## Phase 6 — Memory log + skill self-improvement
 

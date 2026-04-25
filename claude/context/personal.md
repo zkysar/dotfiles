@@ -36,6 +36,15 @@ patterns* (Claude observed across sessions), use the memory system at
 - (Seed empty — Claude detects from past 7-day calendar scan and proposes
   additions: bike day, Kai catchups, straw, etc.)
 
+## Tasks to never auto-schedule
+
+These Todoist tasks/categories should never be proposed for calendar
+scheduling, even when they look schedulable. Grows as Claude learns —
+when Zach rejects a scheduling proposal, ask if it should be added here.
+
+- **PT** — physical therapy lives outside the planner; never auto-schedule
+- (More to come)
+
 ## Relationships
 
 - (Seed empty — names + context for people who appear in calendar/Todoist)
