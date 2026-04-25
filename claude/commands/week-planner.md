@@ -88,8 +88,14 @@ For each proposed change, in plain English, **one at a time**:
 > "I'm going to add a 30-minute travel block before your 2pm at the
 > office. Okay?"
 
-Accept: yes / no / skip / modify. **No bulk approval.** Don't combine
-multiple changes into one question.
+Accept: yes / no / skip / modify. **No bulk approval by default.** Don't
+combine multiple changes into one question.
+
+**Bulk-approval escape:** If Zach explicitly asks for a bulk list ("just
+give me the list", "I'll approve in bulk", "this process is too slow"),
+switch to a single numbered list of all remaining proposed changes and
+accept "approve" or "approve N,M,..." as approval. Once switched, don't
+revert to one-at-a-time mid-session.
 
 ## Phase 5 — Execute approved changes
 
