@@ -46,16 +46,6 @@
           }
         ]
       }
-    ],
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "osascript -e 'if (name of (info for (path to frontmost application))) is not \"Ghostty.app\" then display notification \"Response complete\" with title \"Claude Code\"'"
-          }
-        ]
-      }
     ]
   },
   "statusLine": {
