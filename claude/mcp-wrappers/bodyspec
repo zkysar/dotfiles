@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# BodySpec exposes a remote HTTP MCP at https://app.bodyspec.com/mcp with OAuth 2.0.
+# Both Claude Code and Claude Desktop need stdio MCPs, so we bridge via mcp-remote.
+# OAuth tokens are cached by mcp-remote in ~/.mcp-auth/ — first run opens a browser
+# to complete the login, subsequent runs reuse the cached token.
+set -euo pipefail
+
+exec npx -y mcp-remote https://app.bodyspec.com/mcp
