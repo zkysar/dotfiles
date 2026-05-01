@@ -11,6 +11,12 @@
     <string>/Users/zachkysar/projects/utils/jpr-pipeline/jpr-pipeline.app/Contents/MacOS/jpr-pipeline-runner</string>
   </array>
 
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key>
+    <string>/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+  </dict>
+
   <key>WatchPaths</key>
   <array>
     <string>/Users/zachkysar/Library/Mobile Documents/iCloud~com~openplanetsoftware~just-press-record/Documents</string>
