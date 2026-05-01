@@ -84,3 +84,7 @@ dest = "~/Library/LaunchAgents/com.zachkysar.tmp-sweep.plist"
 [[link]]
 src  = "tmp/CLAUDE.md"
 dest = "~/tmp/CLAUDE.md"
+
+[[link]]
+src  = "launchd/com.zachkysar.jpr-pipeline.plist"
+dest = "~/Library/LaunchAgents/com.zachkysar.jpr-pipeline.plist"
