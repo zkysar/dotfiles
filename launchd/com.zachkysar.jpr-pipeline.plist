@@ -8,8 +8,7 @@
 
   <key>ProgramArguments</key>
   <array>
-    <string>/usr/bin/python3</string>
-    <string>/Users/zachkysar/projects/utils/jpr-pipeline/jpr_pipeline.py</string>
+    <string>/Users/zachkysar/projects/utils/jpr-pipeline/jpr-pipeline.app/Contents/MacOS/jpr-pipeline-runner</string>
   </array>
 
   <key>WatchPaths</key>
