@@ -4,6 +4,8 @@
 # - dest missing:            create
 # - dest is a real file/dir: move to ~/.dotfiles-backup/<ts>/ then link
 # - dest is a symlink elsewhere: warn (require --force to overwrite)
+# After linking, prunes orphan symlinks: any symlink in a manifest parent dir
+# whose target points into this repo but is not listed in the manifest.
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -33,12 +35,19 @@ expand_home() {
   esac
 }
 
-linked=0; skipped=0; backed_up=0; warned=0
+linked=0; skipped=0; backed_up=0; warned=0; pruned=0
+
+EXPECTED_FILE="$(mktemp)"
+PARENTS_FILE="$(mktemp)"
+trap 'rm -f "$EXPECTED_FILE" "$PARENTS_FILE"' EXIT
 
 while IFS=$'\t' read -r src dest; do
   [ -z "$src" ] && continue
   src_abs="$REPO_ROOT/$src"
   dest_abs="$(expand_home "$dest")"
+
+  echo "$dest_abs" >> "$EXPECTED_FILE"
+  dirname "$dest_abs" >> "$PARENTS_FILE"
 
   if [ ! -e "$src_abs" ] && [ ! -L "$src_abs" ]; then
     echo "✗ source missing in repo: $src" >&2
@@ -81,5 +90,28 @@ while IFS=$'\t' read -r src dest; do
   linked=$((linked+1))
 done < <(parse_manifest)
 
+# Prune orphans: symlinks in manifest parent dirs whose target points into
+# REPO_ROOT but which are not listed as expected destinations.
+while IFS= read -r parent; do
+  [ -d "$parent" ] || continue
+  while IFS= read -r -d '' link; do
+    target="$(readlink "$link")"
+    case "$target" in
+      "$REPO_ROOT"/*)
+        if ! grep -Fxq "$link" "$EXPECTED_FILE"; then
+          rm "$link"
+          rel="${link#$HOME/}"
+          if [ "$rel" != "$link" ]; then
+            echo "→ pruned orphan: ~/$rel"
+          else
+            echo "→ pruned orphan: $link"
+          fi
+          pruned=$((pruned+1))
+        fi
+        ;;
+    esac
+  done < <(find "$parent" -maxdepth 1 -type l -print0 2>/dev/null)
+done < <(sort -u "$PARENTS_FILE")
+
 echo ""
-echo "Summary: $linked linked, $skipped already correct, $backed_up backed up, $warned warnings"
+echo "Summary: $linked linked, $skipped already correct, $backed_up backed up, $pruned pruned, $warned warnings"

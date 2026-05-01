@@ -29,9 +29,16 @@ expand_home() {
 
 ok=0; bad=0
 issues=""
+
+EXPECTED_FILE="$(mktemp)"
+PARENTS_FILE="$(mktemp)"
+trap 'rm -f "$EXPECTED_FILE" "$PARENTS_FILE"' EXIT
+
 while IFS=$'\t' read -r src dest; do
   dest_abs="$(expand_home "$dest")"
   expected="$REPO_ROOT/$src"
+  echo "$dest_abs" >> "$EXPECTED_FILE"
+  dirname "$dest_abs" >> "$PARENTS_FILE"
   if [ -L "$dest_abs" ] && [ "$(readlink "$dest_abs")" = "$expected" ]; then
     if [ -e "$dest_abs" ]; then
       ok=$((ok+1))
@@ -47,6 +54,32 @@ while IFS=$'\t' read -r src dest; do
     fi
   fi
 done < <(parse_manifest)
+
+# Detect orphans: symlinks in manifest parent dirs whose target points into
+# REPO_ROOT but which are not in the manifest. These are leftover from removed
+# entries; running `dots link` will prune them.
+orphans=0
+orphan_list=""
+while IFS= read -r parent; do
+  [ -d "$parent" ] || continue
+  while IFS= read -r -d '' link; do
+    target="$(readlink "$link")"
+    case "$target" in
+      "$REPO_ROOT"/*)
+        if ! grep -Fxq "$link" "$EXPECTED_FILE"; then
+          rel="${link#$HOME/}"
+          if [ "$rel" != "$link" ]; then
+            display="~/$rel"
+          else
+            display="$link"
+          fi
+          orphan_list="${orphan_list}  $display"$'\n'
+          orphans=$((orphans+1))
+        fi
+        ;;
+    esac
+  done < <(find "$parent" -maxdepth 1 -type l -print0 2>/dev/null)
+done < <(sort -u "$PARENTS_FILE")
 
 total=$((ok + bad))
 
@@ -67,6 +100,7 @@ fi
 
 clean=1
 [ "$bad" -gt 0 ]       && clean=0
+[ "$orphans" -gt 0 ]   && clean=0
 [ "$git_count" -gt 0 ] && clean=0
 [ "$ahead" -gt 0 ]     && clean=0
 [ "$behind" -gt 0 ]    && clean=0
@@ -74,7 +108,7 @@ clean=1
 if [ "$QUIET" = 1 ]; then
   if [ "$clean" = 0 ]; then
     only_unpushed=0
-    if [ "$ahead" -gt 0 ] && [ "$bad" -eq 0 ] && [ "$git_count" -eq 0 ] && [ "$behind" -eq 0 ]; then
+    if [ "$ahead" -gt 0 ] && [ "$bad" -eq 0 ] && [ "$orphans" -eq 0 ] && [ "$git_count" -eq 0 ] && [ "$behind" -eq 0 ]; then
       only_unpushed=1
     fi
     if [ "$only_unpushed" = 1 ]; then
@@ -82,6 +116,7 @@ if [ "$QUIET" = 1 ]; then
     else
       parts=""
       [ "$bad" -gt 0 ]       && parts="${parts}${bad} symlink issue(s) "
+      [ "$orphans" -gt 0 ]   && parts="${parts}${orphans} orphan symlink(s) "
       [ "$git_count" -gt 0 ] && parts="${parts}${git_count} uncommitted change(s) "
       [ "$ahead" -gt 0 ]     && parts="${parts}${ahead} unpushed commit(s) "
       [ "$behind" -gt 0 ]    && parts="${parts}${behind} commit(s) behind remote "
@@ -97,6 +132,13 @@ if [ "$bad" -eq 0 ]; then
 else
   echo "✗ $bad/$total symlink issues:"
   printf '%s' "$issues"
+fi
+
+if [ "$orphans" -gt 0 ]; then
+  echo "✗ $orphans orphan symlink(s) into repo (run: dots link to prune):"
+  printf '%s' "$orphan_list"
+else
+  echo "✓ no orphan symlinks"
 fi
 
 if [ "$git_count" -gt 0 ]; then
