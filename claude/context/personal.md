@@ -45,6 +45,7 @@ scheduling, even when they look schedulable. Grows as Claude learns —
 when Zach rejects a scheduling proposal, ask if it should be added here.
 
 - **PT** — physical therapy lives outside the planner; never auto-schedule
+- **groceries** — Todoist task is a context list of items to remember; not a schedulable action
 - (More to come)
 
 ## Relationships
