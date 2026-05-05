@@ -94,7 +94,7 @@ _ensure_completion() {
 _ensure_completion kubectl "$HOME/.cache/zsh/completions/_kubectl" completion zsh
 _ensure_completion gh     "$HOME/.cache/zsh/completions/_gh"     completion -s zsh
 
-fpath=("$HOME/.zsh/completions" "$HOME/.cache/zsh/completions" $fpath)
+fpath=("$HOME/.zsh/completions" "$HOME/.zsh/external-completions" "$HOME/.cache/zsh/completions" $fpath)
 # Terraform
 autoload -U +X compinit && compinit
 autoload -U +X bashcompinit && bashcompinit

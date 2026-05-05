@@ -36,7 +36,11 @@ trap 'rm -f "$EXPECTED_FILE" "$PARENTS_FILE"' EXIT
 
 while IFS=$'\t' read -r src dest; do
   dest_abs="$(expand_home "$dest")"
-  expected="$REPO_ROOT/$src"
+  case "$src" in
+    "~/"*) expected="$(expand_home "$src")" ;;
+    /*)    expected="$src" ;;
+    *)     expected="$REPO_ROOT/$src" ;;
+  esac
   echo "$dest_abs" >> "$EXPECTED_FILE"
   dirname "$dest_abs" >> "$PARENTS_FILE"
   if [ -L "$dest_abs" ] && [ "$(readlink "$dest_abs")" = "$expected" ]; then

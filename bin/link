@@ -43,7 +43,11 @@ trap 'rm -f "$EXPECTED_FILE" "$PARENTS_FILE"' EXIT
 
 while IFS=$'\t' read -r src dest; do
   [ -z "$src" ] && continue
-  src_abs="$REPO_ROOT/$src"
+  case "$src" in
+    "~/"*) src_abs="$(expand_home "$src")" ;;
+    /*)    src_abs="$src" ;;
+    *)     src_abs="$REPO_ROOT/$src" ;;
+  esac
   dest_abs="$(expand_home "$dest")"
 
   echo "$dest_abs" >> "$EXPECTED_FILE"

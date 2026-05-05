@@ -15,10 +15,15 @@ fail() { echo "  ✗ $*"; fail=$((fail+1)); }
 # ---------------------------------------------------------------------------
 echo "1. Manifest integrity"
 while IFS= read -r src; do
-  if [ -e "$REPO_ROOT/$src" ]; then
+  case "$src" in
+    "~/"*) check_path="${src/#\~/$HOME}" ;;
+    /*)    check_path="$src" ;;
+    *)     check_path="$REPO_ROOT/$src" ;;
+  esac
+  if [ -e "$check_path" ]; then
     ok "$src"
   else
-    fail "$src (missing from repo)"
+    fail "$src (missing from repo or external path)"
   fi
 done < <(awk '/^src[[:space:]]*=/ { match($0, /"[^"]*"/); print substr($0, RSTART+1, RLENGTH-2) }' "$MANIFEST")
 

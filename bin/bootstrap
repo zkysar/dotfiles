@@ -29,6 +29,37 @@ for pkg in git neovim tmux fzf jq keepercommander; do
 done
 
 echo ""
+echo "Cloning declared project repos…"
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+MANIFEST="$REPO_ROOT/manifest.toml"
+
+parse_projects() {
+  awk '
+    /^\[\[project\]\]/ { in_p=1; repo=""; path=""; next }
+    in_p && /^repo[[:space:]]*=/  { match($0,/"[^"]*"/); repo=substr($0,RSTART+1,RLENGTH-2) }
+    in_p && /^path[[:space:]]*=/  {
+      match($0,/"[^"]*"/); path=substr($0,RSTART+1,RLENGTH-2)
+      if (repo!="" && path!="") print repo "\t" path
+      in_p=0
+    }
+  ' "$MANIFEST"
+}
+
+while IFS=$'\t' read -r repo path; do
+  [ -z "$repo" ] && continue
+  path_abs="${path/#\~/$HOME}"
+  if [ -d "$path_abs/.git" ]; then
+    echo "✓ $path"
+  else
+    echo "→ cloning $repo to $path"
+    mkdir -p "$(dirname "$path_abs")"
+    if ! git clone "$repo" "$path_abs"; then
+      echo "  warn: clone failed; skipping (run bin/link after fixing)" >&2
+    fi
+  fi
+done < <(parse_projects)
+
+echo ""
 echo "Loading dotfiles-managed LaunchAgents…"
 for plist in ~/Library/LaunchAgents/com.zachkysar.*.plist; do
   [[ -e "$plist" ]] || continue
