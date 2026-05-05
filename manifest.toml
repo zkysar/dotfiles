@@ -84,3 +84,18 @@ dest = "~/tmp/CLAUDE.md"
 [[link]]
 src  = "launchd/com.zachkysar.jpr-pipeline.plist"
 dest = "~/Library/LaunchAgents/com.zachkysar.jpr-pipeline.plist"
+
+# External project repos (cloned by bin/bootstrap, linked here).
+# src may be ~/-rooted or absolute; bin/link handles both.
+
+[[project]]
+repo = "git@github.com:zachkysar/dji-import.git"
+path = "~/projects/utils/dji-import"
+
+[[link]]
+src  = "~/projects/utils/dji-import/dji-import"
+dest = "~/.local/bin/dji-import"
+
+[[link]]
+src  = "~/projects/utils/dji-import/completions/_dji-import"
+dest = "~/.zsh/external-completions/_dji-import"
