@@ -89,13 +89,13 @@ dest = "~/Library/LaunchAgents/com.zachkysar.jpr-pipeline.plist"
 # src may be ~/-rooted or absolute; bin/link handles both.
 
 [[project]]
-repo = "git@github.com:zachkysar/dji-import.git"
-path = "~/projects/utils/dji-import"
+repo = "git@github.com:zkysar/media-import.git"
+path = "~/projects/utils/media-import"
 
 [[link]]
-src  = "~/projects/utils/dji-import/dji-import"
-dest = "~/.local/bin/dji-import"
+src  = "~/projects/utils/media-import/media-import"
+dest = "~/.local/bin/media-import"
 
 [[link]]
-src  = "~/projects/utils/dji-import/completions/_dji-import"
-dest = "~/.zsh/external-completions/_dji-import"
+src  = "~/projects/utils/media-import/completions/_media-import"
+dest = "~/.zsh/external-completions/_media-import"
