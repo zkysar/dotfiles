@@ -33,6 +33,14 @@ terminal.
 - Commit in this repo after every meaningful change.
 - New shells show a one-line nag if there's uncommitted drift.
 
+## Backups
+
+When `dots link` displaces a real file or directory at a managed destination,
+it moves the original to `~/.dotfiles-backup/<ISO-timestamp>/` rather than
+deleting it. Each `dots link` run also sweeps that directory and removes
+entries older than 30 days, so `.env` files and similar don't accumulate
+indefinitely. Pruning errors are non-fatal.
+
 ## Adding things
 
 - **A new dotfile category:** drop it in, add a `[[link]]` to `manifest.toml`,

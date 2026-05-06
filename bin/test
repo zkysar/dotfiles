@@ -74,6 +74,32 @@ else
 fi
 
 # ---------------------------------------------------------------------------
+# 4. Backup pruning — bin/_prune-backups removes >30-day-old entries
+# ---------------------------------------------------------------------------
+echo "4. Backup pruning"
+prune_test_root="$(mktemp -d -t dots-prune.XXXXXX)"
+mkdir "$prune_test_root/old_entry" "$prune_test_root/recent_entry"
+# BSD touch (macOS): -t [[CC]YY]MMDDhhmm sets mtime. 60 days back → >30 days old.
+old_stamp="$(date -v-60d +%Y%m%d0000 2>/dev/null || date -d '60 days ago' +%Y%m%d0000)"
+touch -t "$old_stamp" "$prune_test_root/old_entry"
+
+prune_out="$("$REPO_ROOT/bin/_prune-backups" "$prune_test_root" 2>&1 || true)"
+
+if [ ! -e "$prune_test_root/old_entry" ] && [ -d "$prune_test_root/recent_entry" ]; then
+  ok "old backup pruned, recent backup retained"
+else
+  fail "prune did not behave as expected (output: $prune_out)"
+fi
+rm -rf "$prune_test_root"
+
+# Missing backup root must not error
+if "$REPO_ROOT/bin/_prune-backups" "/nonexistent/dotfiles-backup-$$" >/dev/null 2>&1; then
+  ok "prune handles missing backup root cleanly"
+else
+  fail "prune errored on missing backup root"
+fi
+
+# ---------------------------------------------------------------------------
 # Summary
 # ---------------------------------------------------------------------------
 echo ""

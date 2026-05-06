@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# Prune ~/.dotfiles-backup/<ts>/ directories older than 30 days.
+# Usage: _prune-backups [backup_root]   (default: $HOME/.dotfiles-backup)
+# Emits one line per deleted directory. Errors are non-fatal — exits 0
+# even if pruning some entries fails, so callers can ignore failures.
+set -uo pipefail
+
+BACKUP_ROOT="${1:-$HOME/.dotfiles-backup}"
+[ -d "$BACKUP_ROOT" ] || exit 0
+
+while IFS= read -r dir; do
+  [ -z "$dir" ] && continue
+  if rm -rf "$dir" 2>/dev/null; then
+    rel="${dir#$HOME/}"
+    if [ "$rel" != "$dir" ]; then
+      echo "→ pruned old backup: ~/$rel"
+    else
+      echo "→ pruned old backup: $dir"
+    fi
+  fi
+done < <(find "$BACKUP_ROOT" -mindepth 1 -maxdepth 1 -type d -mtime +30 2>/dev/null || true)
+
+exit 0

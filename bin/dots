@@ -8,7 +8,9 @@ usage() {
 Usage: dots <subcommand> [args...]
 
 Subcommands:
-  link        Create HOME symlinks from manifest.toml
+  link        Create HOME symlinks from manifest.toml.
+              Displaced files are saved to ~/.dotfiles-backup/<ts>/.
+              Backup entries older than 30 days are pruned on each run.
   unlink      Remove managed symlinks
   doctor      Report symlink health and uncommitted drift
   bootstrap   Install Homebrew packages
