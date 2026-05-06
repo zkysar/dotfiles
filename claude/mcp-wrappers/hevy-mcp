@@ -8,4 +8,5 @@ set -euo pipefail
 HEVY_API_KEY=$(security find-generic-password -s HEVY_API_KEY -a "$USER" -w)
 export HEVY_API_KEY
 
-exec npx -y hevy-mcp
+# Pin npm version — bumps must be intentional (wrapper runs with secrets in env).
+exec npx -y hevy-mcp@1.23.6

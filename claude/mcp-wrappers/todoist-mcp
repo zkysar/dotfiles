@@ -8,4 +8,5 @@ set -euo pipefail
 TODOIST_API_KEY=$(security find-generic-password -s TODOIST_API_TOKEN -a "$USER" -w)
 export TODOIST_API_KEY
 
-exec npx -y @doist/todoist-ai
+# Pin npm version — bumps must be intentional (wrapper runs with secrets in env).
+exec npx -y @doist/todoist-ai@8.12.1

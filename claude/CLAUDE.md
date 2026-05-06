@@ -48,6 +48,8 @@ MCPs must be registered in **two places**:
 
 Wrapper scripts live in `claude/mcp-wrappers/` in this repo (version-controlled) and are symlinked to `~/.claude/mcp-wrappers/` via `manifest.toml` + `dots link`.
 
+- **Pin npm versions in every wrapper.** Wrappers run with Keychain secrets exported to their env, so a compromised upstream release has high blast radius. Use `npx -y <pkg>@<version>` (not unpinned `npx -y <pkg>`); bumps must be intentional and reviewed.
+
 **Paths in both config files must be absolute** — use `/Users/zachkysar/.claude/mcp-wrappers/<name>`, not `~`. Desktop does not reliably expand `~`.
 
 **Keep both configs in sync manually.** There is no automation — the convention is: if it's in `~/.claude.json`, it should also be in the Desktop config, and vice versa.

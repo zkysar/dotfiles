@@ -5,4 +5,5 @@
 # to complete the login, subsequent runs reuse the cached token.
 set -euo pipefail
 
-exec npx -y mcp-remote https://app.bodyspec.com/mcp
+# Pin npm version — bumps must be intentional (wrapper runs with secrets in env).
+exec npx -y mcp-remote@0.1.38 https://app.bodyspec.com/mcp
