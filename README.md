@@ -49,4 +49,11 @@ indefinitely. Pruning errors are non-fatal.
   password field), then run `dots keys sync`. Never write values directly into
   the repo.
 
+## Secrets scan
+
+`bin/test` includes a secrets-pattern scan and runs at three layers:
+pre-commit (via `core.hooksPath` → `git/hooks/`), pre-push (same delegation),
+and CI (`.github/workflows/secrets-scan.yml`). A `--no-verify` commit still
+gets caught at push or in CI.
+
 See [CLAUDE.md](CLAUDE.md) for more detail.

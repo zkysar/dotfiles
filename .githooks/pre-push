@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# Dotfiles pre-push: re-run the repo self-tests before pushing.
+# Invoked by the global hook at ~/.config/git/hooks/pre-push via core.hooksPath.
+set -euo pipefail
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+exec "$REPO_ROOT/bin/test"
