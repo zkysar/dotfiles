@@ -101,6 +101,13 @@ machines, and unpushed commits leave other machines drifting. Run `dots push`
   gitignored. No template, no merge.
 - `claude/mcp-library/.mcp.json` is in-tree if it contains no credentials;
   otherwise it must be gitignored with a `.mcp.json.template` committed.
+- Config directories that hold secret material (OAuth tokens, refresh
+  tokens, API keys on disk) must NOT live inside the tracked symlinked
+  tree — keep them under `~/.config/<tool>/` or similar so the repo never
+  has even a parent path that could accidentally absorb them. Relying on
+  a `.gitignore` rule that names a single secret file inside a tracked
+  parent dir is fragile: a sloppy `git add <parent>` plus future
+  gitignore drift will silently commit the token.
 
 ## Working with git worktrees
 
