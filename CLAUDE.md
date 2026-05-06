@@ -74,7 +74,11 @@ Alternatively, create the Keeper record manually and run `dots keys sync`.
 
 ## Testing
 
-`bin/test` runs three suites: manifest integrity, shell syntax, and secrets scan. It runs automatically as a pre-commit hook (via `core.hooksPath` → `git/hooks/`).
+`bin/test` runs four suites: manifest integrity, shell syntax, a secrets scan
+via `gitleaks` (configured by `.gitleaks.toml` at the repo root), and
+backup-pruning behavior. It runs automatically as a pre-commit hook (via
+`core.hooksPath` → `git/hooks/`). `gitleaks` is installed by `bin/bootstrap`;
+`bin/test` hard-fails if it's missing.
 
 When adding features that touch the manifest, shell files, or introduce new bin scripts with logic, add or extend `bin/test` accordingly. Examples:
 - New `manifest.toml` entry → covered automatically by the manifest integrity suite
@@ -108,6 +112,11 @@ machines, and unpushed commits leave other machines drifting. Run `dots push`
   a `.gitignore` rule that names a single secret file inside a tracked
   parent dir is fragile: a sloppy `git add <parent>` plus future
   gitignore drift will silently commit the token.
+- The global pre-commit hook (`git/hooks/pre-commit`, linked via
+  `core.hooksPath`) runs `gitleaks git --staged` on **every** commit in
+  **every** repo on this machine before delegating to repo-local hooks. False
+  positives in this repo are tuned via `.gitleaks.toml`; other repos can drop
+  their own `.gitleaks.toml` for the same purpose.
 
 ## Working with git worktrees
 

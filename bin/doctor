@@ -172,4 +172,11 @@ if [ "$behind" -gt 0 ]; then
   echo "✗ $behind commit(s) behind origin/$default_branch (run: git pull)"
 fi
 
+if command -v gitleaks >/dev/null 2>&1; then
+  echo "✓ gitleaks installed ($(gitleaks version 2>/dev/null))"
+else
+  echo "✗ gitleaks not installed (run: bin/bootstrap)"
+  clean=0
+fi
+
 [ "$clean" = 1 ] && exit 0 || exit 1

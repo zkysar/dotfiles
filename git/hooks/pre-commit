@@ -1,8 +1,14 @@
 #!/usr/bin/env bash
 # Global pre-commit hook (core.hooksPath).
-# Delegates to a repo-local hook at <repo>/.githooks/pre-commit if present.
-# Otherwise exits silently — do not block commits in repos that don't opt in.
+# 1. Run gitleaks against staged content (every repo, always). Soft-skip if
+#    gitleaks isn't installed yet — fresh machines run bin/bootstrap first.
+# 2. Delegate to a repo-local hook at <repo>/.githooks/pre-commit if present.
+#    Otherwise exit silently — do not block commits in repos that don't opt in.
 set -euo pipefail
+
+if command -v gitleaks >/dev/null 2>&1; then
+  gitleaks git --staged --redact --no-banner || exit 1
+fi
 
 REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || true)"
 [ -n "$REPO_ROOT" ] || exit 0

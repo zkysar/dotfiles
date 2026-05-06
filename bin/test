@@ -41,36 +41,16 @@ while IFS= read -r -d '' f; do
 done < <(find "$REPO_ROOT/shell" -type f -print0)
 
 # ---------------------------------------------------------------------------
-# 3. Secrets scan
+# 3. Secrets scan (delegated to gitleaks; .gitleaks.toml at repo root tunes it)
 # ---------------------------------------------------------------------------
 echo "3. Secrets scan"
-# Patterns that should never appear in committed files.
-# Excludes: .git/, binary-ish files, and the test script itself.
-secret_patterns=(
-  'sk-[A-Za-z0-9]{20,}'          # OpenAI / Anthropic keys
-  'ghp_[A-Za-z0-9]{36}'          # GitHub personal access tokens
-  'xoxb-[0-9A-Za-z-]+'           # Slack bot tokens
-  'AIza[0-9A-Za-z_-]{35}'        # Google API keys
-  'AKIA[0-9A-Z]{16}'             # AWS access key IDs
-  'password\s*=\s*"[^"]+'        # Literal password assignments
-  '[0-9a-f]{32,64}:[0-9a-f]{32,64}' # colon-joined hex secrets (app passwords etc.)
-)
-
-joined=$(printf '|' ; printf '%s|' "${secret_patterns[@]}" | sed 's/|$//')
-
-hits=$(git -C "$REPO_ROOT" grep -rniE "$joined" \
-  --untracked \
-  -- \
-  ':!.git' \
-  ':!bin/test' \
-  ':!*.png' ':!*.jpg' ':!*.ico' ':!*.lock' \
-  2>/dev/null || true)
-
-if [ -z "$hits" ]; then
-  ok "no secret patterns found"
+if ! command -v gitleaks >/dev/null 2>&1; then
+  fail "gitleaks not installed — run bin/bootstrap"
+elif gl_out=$(gitleaks git --redact --no-banner "$REPO_ROOT" 2>&1); then
+  ok "no secrets detected (gitleaks)"
 else
-  fail "potential secrets detected:"
-  printf '%s\n' "$hits" | sed 's/^/      /'
+  fail "gitleaks found secrets — run \`gitleaks git --redact $REPO_ROOT\` for details"
+  printf '%s\n' "$gl_out" | sed 's/^/      /'
 fi
 
 # ---------------------------------------------------------------------------

@@ -19,7 +19,7 @@ fi
 echo "Updating Homebrew…"
 brew update
 
-for pkg in git neovim tmux fzf jq keepercommander; do
+for pkg in git neovim tmux fzf jq keepercommander gitleaks; do
   if brew list "$pkg" >/dev/null 2>&1; then
     echo "✓ $pkg"
   else

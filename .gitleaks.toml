@@ -1,0 +1,8 @@
+title = "dotfiles gitleaks config"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Pushover API documentation examples (third-party sample tokens, not real secrets)"
+paths = ['''claude/hooks/pushover\.md''']
