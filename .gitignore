@@ -20,8 +20,5 @@ nvim/lazy-lock.json
 # Backups created by bin/link (stored at $HOME, not in repo, but guard anyway)
 .dotfiles-backup/
 
-# Never commit key values
-shell/keys.sh
-
 # gcalcli OAuth token (written by gcalcli into the tracked config dir)
 claude/gcalcli/oauth2.json

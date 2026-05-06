@@ -94,9 +94,11 @@ machines, and unpushed commits leave other machines drifting. Run `dots push`
 ## Secrets policy
 
 - Never commit API keys, tokens, passwords, or any value from a `.env` file.
-- `.gitignore` excludes `claude/hooks/.env`, `claude/settings.local.json`, and
-  `shell/keys.sh`. If you add a file that contains secrets, gitignore it AND
-  create a `*.template` sibling.
+- `.gitignore` excludes `claude/hooks/.env` and `claude/settings.local.json`.
+- **Template-or-deletion is enforced**: any new gitignored secret-bearing file
+  MUST land with its `*.template` sibling in the same commit. The template
+  contains placeholder values and a header explaining that the live file is
+  gitignored. No template, no merge.
 - `claude/mcp-library/.mcp.json` is in-tree if it contains no credentials;
   otherwise it must be gitignored with a `.mcp.json.template` committed.
 
