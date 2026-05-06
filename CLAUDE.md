@@ -61,8 +61,12 @@ synced into Keychain and exported by zshrc.
 In your own terminal (Claude is denied from invoking `keeper`):
 
 ```bash
-dots keys add MY_SECRET_NAME secretvalue
+dots keys add MY_SECRET_NAME
 ```
+
+You'll be prompted for the value. **Why prompt instead of passing it on argv:**
+the argv form leaks the secret to shell history and is briefly visible to
+other processes via `ps`.
 
 This creates the Keeper record and syncs to Keychain in one step. Open a new terminal — zshrc exports the new env var automatically.
 

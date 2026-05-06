@@ -81,5 +81,6 @@ repo.
 truth), synced one-way into macOS Keychain, and exported as env vars by zshrc
 at shell startup. Never write a secret into any file. Claude is denied from
 invoking `keeper` directly — when a new secret is needed, ask the user to run
-`dots keys add NAME value` in their own terminal. See the dotfiles repo
+`dots keys add NAME` in their own terminal (it prompts for the value; passing
+it on argv would leak to shell history and `ps`). See the dotfiles repo
 CLAUDE.md for the full flow.

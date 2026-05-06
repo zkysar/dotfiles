@@ -110,14 +110,26 @@ EOF
 
   add)
     name="${2:-}"
-    value="${3:-}"
-    if [ -z "$name" ] || [ -z "$value" ]; then
-      echo "usage: keys add <NAME> <VALUE>" >&2
+    if [ -z "$name" ]; then
+      echo "usage: keys add <NAME> [VALUE]" >&2
+      echo "  VALUE omitted → prompt (recommended; argv leaks to history and ps)" >&2
       exit 1
     fi
     if ! [[ "$name" =~ ^[A-Z][A-Z0-9_]+$ ]]; then
       echo "error: NAME must be UPPER_SNAKE_CASE (e.g. MY_API_TOKEN)" >&2
       exit 1
+    fi
+    if [ "$#" -ge 3 ]; then
+      echo "⚠ passing VALUE on argv leaks the secret to shell history and 'ps'." >&2
+      echo "  prefer 'dots keys add $name' to be prompted." >&2
+      value="$3"
+    else
+      read -rs -p "value: " value
+      echo
+      if [ -z "$value" ]; then
+        echo "error: empty value" >&2
+        exit 1
+      fi
     fi
     keeper record-add -t "$name" --folder "$ENV_FOLDER" -rt login "password=$value"
     "$0" sync
@@ -143,7 +155,8 @@ EOF
     cat >&2 <<EOF
 usage: keys <command>
 
-  add NAME VALUE  create a Keeper record and sync it to Keychain
+  add NAME [VALUE]  create a Keeper record and sync it to Keychain
+                    (omit VALUE to be prompted; argv leaks to history and ps)
   list            show each env-var in the names list (present|MISSING in Keychain)
   sync            pull every ENV_VAR_STYLE-titled Keeper record into Keychain
   rm NAME         remove from Keychain (Keeper record untouched)
