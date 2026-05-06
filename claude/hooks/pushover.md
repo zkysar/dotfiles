@@ -1,3 +1,34 @@
+# Local hook: pushover-notification.py
+
+The Stop hook posts a fixed notification to Pushover whenever Claude
+Code finishes responding. The payload deliberately contains **no
+conversation content** — message body is the fixed string `"Claude Code
+task finished"`. The hook does not extract, truncate, or transmit
+`event.content`, tool args, prompts, or any other field from the event
+JSON.
+
+What is sent:
+
+| Field    | Value                          |
+|----------|--------------------------------|
+| message  | `Claude Code task finished` (fixed) |
+| title    | `Claude Code Task Finished`    |
+| device   | `iphone15`                     |
+| priority | `-1` (low)                     |
+
+The hook still reads the event from stdin and re-emits it unchanged on
+stdout (it is a passthrough). It only sends the notification when the
+event is an assistant message (`type == "message"`, `role ==
+"assistant"`).
+
+Credentials (`PUSHOVER_APP_TOKEN`, `PUSHOVER_USER_KEY`) are loaded from
+the environment or `claude/hooks/.env`. If either is unset the hook
+prints a warning to stderr and exits without sending.
+
+The reference for the upstream API follows.
+
+---
+
 Pushover Message API
 Pushover uses a simple, versioned REST API to receive messages and broadcast them to devices running our device clients. To simplify the user registration process and usage of our API, there are no complicated out-of-band authentication mechanisms or per-call signing libraries required, such as OAuth. Standard HTTP libraries available in just about every language, or even from the command line, can be used without any custom modules or extra dependencies needed. See our Knowledge Base for examples in different programming languages.
 

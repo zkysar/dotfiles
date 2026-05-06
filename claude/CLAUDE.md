@@ -62,6 +62,16 @@ To add a new MCP:
 
 Do NOT add `mcpServers` blocks to `~/.claude/settings.json` — Claude Code does not read MCP config from there; entries are silently ignored.
 
+## Hooks
+
+**Hooks that POST to third-party services must not include conversation
+content (assistant messages, tool args, user prompts) in the payload —
+only non-content metadata (event type, timestamps, fixed strings).**
+Conversation content can contain secrets, credentials, or PII that the
+remote service has no legitimate need to receive. If a notification
+needs more than "an event happened," route it through a service you
+control or surface it locally instead.
+
 ## Dotfiles
 
 Dotfiles repo: `~/projects/dotfiles/`. Many paths under `$HOME` (shell, tmux,
