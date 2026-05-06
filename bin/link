@@ -6,15 +6,21 @@
 # - dest is a symlink elsewhere: warn (require --force to overwrite)
 # After linking, prunes orphan symlinks: any symlink in a manifest parent dir
 # whose target points into this repo but is not listed in the manifest.
+# Before linking, sweeps ~/.dotfiles-backup/ entries older than 30 days
+# (non-fatal — pruning errors don't abort the run).
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+BIN_DIR="$REPO_ROOT/bin"
 MANIFEST="$REPO_ROOT/manifest.toml"
 BACKUP_ROOT="$HOME/.dotfiles-backup/$(date -u +%Y%m%dT%H%M%SZ)"
 FORCE=0
 [ "${1:-}" = "--force" ] && FORCE=1
 
 [ -f "$MANIFEST" ] || { echo "error: manifest.toml not found" >&2; exit 1; }
+
+# Sweep ~/.dotfiles-backup/ entries older than 30 days. Non-fatal.
+"$BIN_DIR/_prune-backups" || true
 
 parse_manifest() {
   awk '
