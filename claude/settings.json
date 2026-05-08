@@ -69,10 +69,10 @@
     }
   },
   "alwaysThinkingEnabled": true,
+  "preferredNotifChannel": "iterm2",
   "voiceEnabled": true,
   "feedbackSurveyState": {
     "lastShownTime": 1755134822529
   },
-  "defaultOutputStyle": "sr-software-developer",
-  "preferredNotifChannel": "iterm2"
+  "defaultOutputStyle": "sr-software-developer"
 }
