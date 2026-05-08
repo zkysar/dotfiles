@@ -72,6 +72,14 @@ remote service has no legitimate need to receive. If a notification
 needs more than "an event happened," route it through a service you
 control or surface it locally instead.
 
+## Dev server ports
+
+When starting a dev/test web server in any repo, bind to a **random high port**
+(e.g. `$((30000 + RANDOM % 30000))`) instead of the project's default. Multiple
+worktrees and concurrent Claude sessions are common on this machine, and fixed
+default ports collide. If a tool requires a fixed port, pick one explicitly and
+tell the user before starting it.
+
 ## Dotfiles
 
 Dotfiles repo: `~/projects/dotfiles/`. Many paths under `$HOME` (shell, tmux,
