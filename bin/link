@@ -42,6 +42,14 @@ expand_home() {
 }
 
 linked=0; skipped=0; backed_up=0; warned=0; pruned=0
+# Track whether we touched any zsh completion file (basename `_*`). If so, the
+# .zcompdump cache is stale and must be wiped — compinit's own staleness check
+# is unreliable in practice, leaving new completions invisible until the cache
+# happens to roll over. Wiping forces compinit to rebuild on next shell start.
+comp_changed=0
+is_completion() {
+  case "$(basename "$1")" in _*) return 0 ;; *) return 1 ;; esac
+}
 
 EXPECTED_FILE="$(mktemp)"
 PARENTS_FILE="$(mktemp)"
@@ -79,6 +87,7 @@ while IFS=$'\t' read -r src dest; do
       ln -s "$src_abs" "$dest_abs"
       echo "→ replaced: $dest"
       linked=$((linked+1))
+      is_completion "$dest_abs" && comp_changed=1
     else
       echo "⚠ $dest → $current (use --force to overwrite)" >&2
       warned=$((warned+1))
@@ -98,6 +107,7 @@ while IFS=$'\t' read -r src dest; do
   ln -s "$src_abs" "$dest_abs"
   echo "→ linked: $dest"
   linked=$((linked+1))
+  is_completion "$dest_abs" && comp_changed=1
 done < <(parse_manifest)
 
 # Prune orphans: symlinks in manifest parent dirs whose target points into
@@ -117,11 +127,18 @@ while IFS= read -r parent; do
             echo "→ pruned orphan: $link"
           fi
           pruned=$((pruned+1))
+          is_completion "$link" && comp_changed=1
         fi
         ;;
     esac
   done < <(find "$parent" -maxdepth 1 -type l -print0 2>/dev/null)
 done < <(sort -u "$PARENTS_FILE")
+
+if [ "$comp_changed" = 1 ]; then
+  # Glob may not match; don't fail the run if there's nothing to remove.
+  rm -f "$HOME"/.zcompdump* 2>/dev/null || true
+  echo "→ wiped ~/.zcompdump* (zsh completion changed; rebuild on next shell start)"
+fi
 
 echo ""
 echo "Summary: $linked linked, $skipped already correct, $backed_up backed up, $pruned pruned, $warned warnings"
