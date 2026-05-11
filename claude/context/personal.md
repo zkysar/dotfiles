@@ -33,6 +33,11 @@ patterns* (Claude observed across sessions), use the memory system at
 - **Home:** 555 4th Street, San Francisco
 - (Add others as Claude encounters recurring locations — ask before adding)
 
+## Transit times (from home)
+
+- **PT:** ~20 min
+- **Ferry Park:** ~15 min each way
+
 ## Recurring patterns
 
 - (Seed empty — Claude detects from past 7-day calendar scan and proposes
@@ -59,3 +64,11 @@ when Zach rejects a scheduling proposal, ask if it should be added here.
 - Brief tone; propose → confirm → execute; no fluff
 - If a week is overloaded, say so; don't silently drop targets
 - Calendar timezone: `America/Los_Angeles` always
+- **Default timezone for everyone:** Assume all meeting attendees are in Zach's
+  timezone (Pacific) unless explicitly told a person is elsewhere
+- **Light social touchpoints** (quick texts, check-ins like "text X") → Todoist
+  entry, not calendar event
+- **Todoist task additions:** always set `dueString: "today"` so the task
+  appears in today's list — otherwise it gets lost. Do NOT pass
+  `responsibleUser` for personal Inbox tasks (it errors out; only works on
+  shared projects).
