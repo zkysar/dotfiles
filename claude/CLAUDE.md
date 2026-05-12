@@ -39,6 +39,15 @@ usually scaffolding — they belong outside the code they describe.
 This overrides the default in `superpowers:writing-plans` (which saves to
 `docs/superpowers/plans/`).
 
+**Cross-repo edits to `~/projects/plans/`.** That directory is its own git
+repo with its own commit rule (see `~/projects/plans/CLAUDE.md`: every plan
+change gets committed). When editing a plan from a session rooted in a
+*different* repo, the outer repo's `git status` won't show those edits — so
+they're easy to leave uncommitted. Before finishing, `cd ~/projects/plans/`,
+check `git status`, and commit there following that repo's conventions
+(`add <slug>: ...` or `update <slug>: ...`). Don't rely on the outer
+session's git checks to catch plan edits.
+
 ## MCP server config
 
 MCPs must be registered in **two places**:
