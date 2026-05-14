@@ -119,7 +119,7 @@ export OLLAMA_MAX_LOADED_MODELS=2
 # =============================================================================
 [ -x "$HOME/projects/dotfiles/bin/doctor" ] && zsh-defer -1 -2 "$HOME/projects/dotfiles/bin/doctor" --quiet
 
-alias claude-mem='bun "/Users/zachkysar/.claude/plugins/cache/thedotmack/claude-mem/12.1.6/scripts/worker-service.cjs"'
+alias claude-mem='bun "/Users/zachkysar/.claude/plugins/cache/thedotmack/claude-mem/13.2.0/scripts/worker-service.cjs"'
 
 # =============================================================================
 # Prompt
