@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# Reads WHOOP_CLIENT_ID and WHOOP_CLIENT_SECRET from macOS Keychain
+# (synced there by bin/keys) and passes them to the whoop-mcp server.
+# Needed because Claude Code's MCP process doesn't inherit zshrc's
+# deferred Keychain export.
+set -euo pipefail
+
+WHOOP_CLIENT_ID=$(security find-generic-password -s WHOOP_CLIENT_ID -a "$USER" -w)
+WHOOP_CLIENT_SECRET=$(security find-generic-password -s WHOOP_CLIENT_SECRET -a "$USER" -w)
+export WHOOP_CLIENT_ID WHOOP_CLIENT_SECRET
+
+# Versions pinned via uv.lock + --frozen; bumps must be intentional.
+exec uv run --frozen --directory "$HOME/projects/mcp/whoop-mcp" python -m src.server "$@"
