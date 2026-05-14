@@ -46,6 +46,18 @@
           }
         ]
       }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/opt/homebrew/bin/tokenjuice claude-code-post-tool-use",
+            "statusMessage": "compacting bash output with tokenjuice"
+          }
+        ]
+      }
     ]
   },
   "statusLine": {

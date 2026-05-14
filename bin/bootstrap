@@ -19,7 +19,17 @@ fi
 echo "Updating Homebrew…"
 brew update
 
-for pkg in git neovim tmux fzf jq keepercommander gitleaks; do
+echo "Tapping third-party brew repos…"
+for tap in vincentkoc/tap; do
+  if brew tap | grep -qx "$tap"; then
+    echo "✓ tap $tap"
+  else
+    echo "→ tapping $tap"
+    brew tap "$tap"
+  fi
+done
+
+for pkg in git neovim tmux fzf jq keepercommander gitleaks tokenjuice; do
   if brew list "$pkg" >/dev/null 2>&1; then
     echo "✓ $pkg"
   else
