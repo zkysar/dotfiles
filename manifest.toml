@@ -85,6 +85,14 @@ dest = "~/tmp/CLAUDE.md"
 src  = "launchd/com.zachkysar.jpr-pipeline.plist"
 dest = "~/Library/LaunchAgents/com.zachkysar.jpr-pipeline.plist"
 
+[[link]]
+src  = "launchd/com.zachkysar.paperstem-import.plist"
+dest = "~/Library/LaunchAgents/com.zachkysar.paperstem-import.plist"
+
+[[link]]
+src  = "paperstem/import.json"
+dest = "~/.config/paperstem/import.json"
+
 # External project repos (cloned by bin/bootstrap, linked here).
 # src may be ~/-rooted or absolute; bin/link handles both.
 
