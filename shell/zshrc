@@ -39,6 +39,14 @@ export FAKE_LMSTUDIO_KEY=123
 
 export EDITOR="vim"
 
+# rclone remotes defined from the environment (no rclone.conf token on disk).
+# Non-secret params only — the secrets (RCLONE_CONFIG_B2_ACCOUNT, _B2_KEY,
+# _GDRIVE_TOKEN) come from Keychain via _load_keychain_secrets below, added with
+# `dots keys add <NAME>`. Consumed by ~/projects/homelab/storage-audit/.
+export RCLONE_CONFIG_B2_TYPE=b2
+export RCLONE_CONFIG_GDRIVE_TYPE=drive
+export RCLONE_CONFIG_GDRIVE_SCOPE=drive.readonly
+
 # =============================================================================
 # Privacy & Telemetry
 # =============================================================================
