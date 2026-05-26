@@ -48,6 +48,7 @@ indefinitely. Pruning errors are non-fatal.
 - **A new secret:** create a record in Keeper (title = env var name, value in
   password field), then run `dots keys sync`. Never write values directly into
   the repo.
+- Shell config is shared with the NAS toolbox (`homelab/toolbox`); keep `shell/zsh/common.zsh` portable.
 
 ## Secrets scan
 

@@ -37,6 +37,14 @@ Shell functions live in `shell/functions/`, one file per function (`<name>.zsh`)
 
 The syntax checker (`bin/test` suite 2) covers `shell/functions/` automatically via `find shell/ -type f`.
 
+## Shell config also runs on the NAS toolbox
+
+`shell/zsh/common.zsh` is sourced on the NAS toolbox container (see
+`homelab/toolbox`) as well as macOS. Keep it portable — no Homebrew paths, no
+macOS-only binaries, no hardcoded `/Users/…`. macOS-only config goes in
+`shell/zsh/macos.zsh`. `manifest.toml` `platform = "macos"` tags gate which
+links the container creates (it links only `all`/`linux` entries).
+
 ## Adding a new dotfile category
 
 1. Create a top-level dir for the category (e.g. `vscode/`).
