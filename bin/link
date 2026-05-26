@@ -16,7 +16,17 @@ MANIFEST="${MANIFEST:-$REPO_ROOT/manifest.toml}"
 BACKUP_ROOT="$HOME/.dotfiles-backup/$(date -u +%Y%m%dT%H%M%SZ)"
 FORCE=0
 [ "${1:-}" = "--force" ] && FORCE=1
-THIS_PLATFORM="${DOTS_PLATFORM:-$(case "$(uname -s)" in Darwin) echo macos ;; Linux) echo linux ;; *) echo unknown ;; esac)}"
+
+# Current OS, or DOTS_PLATFORM override (used by bin/test). Entries tagged with a
+# non-matching `platform` in manifest.toml are skipped (see parse_manifest).
+_detect_platform() {
+  case "$(uname -s)" in
+    Darwin) echo macos ;;
+    Linux)  echo linux ;;
+    *)      echo unknown ;;
+  esac
+}
+THIS_PLATFORM="${DOTS_PLATFORM:-$(_detect_platform)}"
 
 [ -f "$MANIFEST" ] || { echo "error: manifest.toml not found" >&2; exit 1; }
 
