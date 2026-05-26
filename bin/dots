@@ -3,6 +3,15 @@ set -euo pipefail
 
 DOTS_BIN="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# bootstrap (Homebrew) and keys (Keeper -> Keychain) are macOS-only. Off macOS
+# (e.g. the Linux toolbox container) they are hidden from usage and rejected with
+# a clear message instead of a confusing downstream error. DOTS_PLATFORM overrides
+# detection (matches bin/link / bin/doctor).
+case "${DOTS_PLATFORM:-$(uname -s)}" in
+  Darwin|macos) IS_MAC=1 ;;
+  *)            IS_MAC=0 ;;
+esac
+
 usage() {
   cat <<EOF
 Usage: dots <subcommand> [args...]
@@ -13,16 +22,29 @@ Subcommands:
               Backup entries older than 30 days are pruned on each run.
   unlink      Remove managed symlinks
   doctor      Report symlink health and uncommitted drift
-  bootstrap   Install Homebrew packages
-  keys        Keeper → Keychain sync (add / list / sync / rm)
   push        Push pending commits on the current branch to origin
 EOF
+  if [ "$IS_MAC" = 1 ]; then
+    cat <<EOF
+  bootstrap   Install Homebrew packages (macOS only)
+  keys        Keeper → Keychain sync — add / list / sync / rm (macOS only)
+EOF
+  fi
 }
 
 case "${1:-}" in
-  link|unlink|doctor|bootstrap|keys|push)
+  link|unlink|doctor|push)
     cmd="$1"; shift
     exec "$DOTS_BIN/$cmd" "$@"
+    ;;
+  bootstrap|keys)
+    if [ "$IS_MAC" = 1 ]; then
+      cmd="$1"; shift
+      exec "$DOTS_BIN/$cmd" "$@"
+    fi
+    echo "dots: '$1' is macOS-only (Homebrew / Keeper-Keychain); not available here." >&2
+    echo "      In the Linux toolbox, tools come from the container image, not 'dots bootstrap'." >&2
+    exit 1
     ;;
   --help|-h)
     usage
