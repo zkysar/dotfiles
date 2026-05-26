@@ -53,7 +53,12 @@ fpath=("$HOME/.zsh/completions" "$HOME/.zsh/external-completions" "$HOME/.cache/
 autoload -U +X compinit && compinit
 autoload -U +X bashcompinit && bashcompinit
 
-# Prompt
-PROMPT='%F{#9d7cd8}❯%f %F{#6b9fe4}%~%f '
+# Prompt. An optional location tag is prepended when $TOOLBOX_HOST is set
+# (the NAS toolbox container sets TOOLBOX_HOST=nas); on the Mac it's unset, so
+# the prompt is unchanged.
+_ctx_tag=""
+[[ -n $TOOLBOX_HOST ]] && _ctx_tag="%F{#e0af68}${TOOLBOX_HOST}%f "
+PROMPT="${_ctx_tag}%F{#9d7cd8}❯%f %F{#6b9fe4}%~%f "
+unset _ctx_tag
 RPROMPT=''
 PROMPT_EOL_MARK=''
