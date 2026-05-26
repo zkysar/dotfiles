@@ -8,14 +8,33 @@ MANIFEST="${MANIFEST:-$REPO_ROOT/manifest.toml}"
 QUIET=0
 [ "${1:-}" = "--quiet" ] && QUIET=1
 
+# Current OS, or DOTS_PLATFORM override. Entries whose manifest `platform` tag
+# doesn't match are skipped (mirrors bin/link) — e.g. macOS-only links are not
+# reported as "missing" on the NAS toolbox container.
+_detect_platform() {
+  case "$(uname -s)" in
+    Darwin) echo macos ;;
+    Linux)  echo linux ;;
+    *)      echo unknown ;;
+  esac
+}
+THIS_PLATFORM="${DOTS_PLATFORM:-$(_detect_platform)}"
+
+# Emits: src \t dest \t platform \t rl. platform is field 3 and defaulted to
+# "all" so it is never empty; rl is last so its empty case is a safe trailing
+# field. (An empty MIDDLE field would be collapsed by read's tab/IFS handling,
+# shifting later fields.) Keep awk comment-free: apostrophes would close the
+# surrounding single-quoted program.
 parse_manifest() {
   awk '
-    /^\[\[link\]\]/ { in_link=1; src=""; dest=""; rl=""; next }
+    /^\[\[link\]\]/ { in_link=1; src=""; dest=""; rl=""; platform=""; next }
     in_link && /^src[[:space:]]*=/  { match($0, /"[^"]*"/); src = substr($0, RSTART+1, RLENGTH-2) }
     in_link && /^requires_local[[:space:]]*=/ { match($0, /"[^"]*"/); rl = substr($0, RSTART+1, RLENGTH-2) }
+    in_link && /^platform[[:space:]]*=/ { match($0, /"[^"]*"/); platform = substr($0, RSTART+1, RLENGTH-2) }
     in_link && /^dest[[:space:]]*=/ {
       match($0, /"[^"]*"/); dest = substr($0, RSTART+1, RLENGTH-2)
-      if (src != "" && dest != "") print src "\t" dest "\t" rl
+      if (platform == "") platform = "all"
+      if (src != "" && dest != "") print src "\t" dest "\t" platform "\t" rl
       in_link=0
     }
   ' "$MANIFEST"
@@ -37,7 +56,10 @@ EXPECTED_FILE="$(mktemp)"
 PARENTS_FILE="$(mktemp)"
 trap 'rm -f "$EXPECTED_FILE" "$PARENTS_FILE"' EXIT
 
-while IFS=$'\t' read -r src dest rl; do
+while IFS=$'\t' read -r src dest platform rl; do
+  if [ "$platform" != "all" ] && [ "$platform" != "$THIS_PLATFORM" ]; then
+    continue
+  fi
   dest_abs="$(expand_home "$dest")"
   case "$src" in
     "~/"*) expected="$(expand_home "$src")" ;;
