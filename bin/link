@@ -12,10 +12,11 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BIN_DIR="$REPO_ROOT/bin"
-MANIFEST="$REPO_ROOT/manifest.toml"
+MANIFEST="${MANIFEST:-$REPO_ROOT/manifest.toml}"
 BACKUP_ROOT="$HOME/.dotfiles-backup/$(date -u +%Y%m%dT%H%M%SZ)"
 FORCE=0
 [ "${1:-}" = "--force" ] && FORCE=1
+THIS_PLATFORM="${DOTS_PLATFORM:-$(case "$(uname -s)" in Darwin) echo macos ;; Linux) echo linux ;; *) echo unknown ;; esac)}"
 
 [ -f "$MANIFEST" ] || { echo "error: manifest.toml not found" >&2; exit 1; }
 
@@ -24,11 +25,12 @@ FORCE=0
 
 parse_manifest() {
   awk '
-    /^\[\[link\]\]/ { in_link=1; src=""; dest=""; next }
-    in_link && /^src[[:space:]]*=/  { match($0, /"[^"]*"/); src  = substr($0, RSTART+1, RLENGTH-2) }
+    /^\[\[link\]\]/ { in_link=1; src=""; dest=""; platform=""; next }
+    in_link && /^src[[:space:]]*=/      { match($0, /"[^"]*"/); src      = substr($0, RSTART+1, RLENGTH-2) }
+    in_link && /^platform[[:space:]]*=/ { match($0, /"[^"]*"/); platform = substr($0, RSTART+1, RLENGTH-2) }
     in_link && /^dest[[:space:]]*=/ {
       match($0, /"[^"]*"/); dest = substr($0, RSTART+1, RLENGTH-2)
-      if (src != "" && dest != "") print src "\t" dest
+      if (src != "" && dest != "") print src "\t" dest "\t" platform
       in_link=0
     }
   ' "$MANIFEST"
@@ -55,8 +57,12 @@ EXPECTED_FILE="$(mktemp)"
 PARENTS_FILE="$(mktemp)"
 trap 'rm -f "$EXPECTED_FILE" "$PARENTS_FILE"' EXIT
 
-while IFS=$'\t' read -r src dest; do
+while IFS=$'\t' read -r src dest platform; do
   [ -z "$src" ] && continue
+  platform="${platform:-all}"
+  if [ "$platform" != "all" ] && [ "$platform" != "$THIS_PLATFORM" ]; then
+    continue
+  fi
   case "$src" in
     "~/"*) src_abs="$(expand_home "$src")" ;;
     /*)    src_abs="$src" ;;

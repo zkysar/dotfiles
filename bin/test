@@ -110,6 +110,36 @@ fi
 rm -rf "$rl_tmp"
 
 # ---------------------------------------------------------------------------
+# 6. Platform filter — bin/link skips entries whose platform != current OS
+# ---------------------------------------------------------------------------
+echo "6. Platform filter (bin/link)"
+pf_tmp="$(mktemp -d -t dots-pf.XXXXXX)"
+: > "$pf_tmp/srcfile"
+cat > "$pf_tmp/manifest.toml" <<EOF
+[[link]]
+src      = "$pf_tmp/srcfile"
+platform = "macos"
+dest     = "$pf_tmp/dest_macos"
+
+[[link]]
+src      = "$pf_tmp/srcfile"
+platform = "linux"
+dest     = "$pf_tmp/dest_linux"
+
+[[link]]
+src  = "$pf_tmp/srcfile"
+dest = "$pf_tmp/dest_all"
+EOF
+HOME="$pf_tmp" MANIFEST="$pf_tmp/manifest.toml" DOTS_PLATFORM=linux \
+  "$REPO_ROOT/bin/link" >/dev/null 2>&1 || true
+if [ -L "$pf_tmp/dest_linux" ] && [ -L "$pf_tmp/dest_all" ] && [ ! -e "$pf_tmp/dest_macos" ]; then
+  ok "linux + all linked, macos skipped (DOTS_PLATFORM=linux)"
+else
+  fail "platform filter wrong: linux=$([ -L "$pf_tmp/dest_linux" ] && echo L) all=$([ -L "$pf_tmp/dest_all" ] && echo L) macos=$([ -e "$pf_tmp/dest_macos" ] && echo present)"
+fi
+rm -rf "$pf_tmp"
+
+# ---------------------------------------------------------------------------
 # Summary
 # ---------------------------------------------------------------------------
 echo ""
