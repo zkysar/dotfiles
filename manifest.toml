@@ -17,6 +17,14 @@ dest = "~/.config/nvim"
 src  = "git/gitconfig"
 dest = "~/.gitconfig"
 
+# `requires_local` (optional) names an untracked companion file the linked
+# config depends on. `dots doctor` flags it if missing. Keep it BEFORE `dest`:
+# the awk parser emits the entry on the `dest` line, so later fields are lost.
+[[link]]
+src            = "ssh/config"
+requires_local = "~/.ssh/config.local"
+dest           = "~/.ssh/config"
+
 [[link]]
 src  = "claude/settings.json"
 dest = "~/.claude/settings.json"

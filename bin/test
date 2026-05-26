@@ -80,6 +80,36 @@ else
 fi
 
 # ---------------------------------------------------------------------------
+# 5. requires_local — dots doctor flags a missing untracked companion file
+# ---------------------------------------------------------------------------
+echo "5. requires_local (doctor)"
+rl_tmp="$(mktemp -d -t dots-rl.XXXXXX)"
+: > "$rl_tmp/present.local"
+cat > "$rl_tmp/manifest.toml" <<EOF
+[[link]]
+src            = "manifest.toml"
+requires_local = "$rl_tmp/missing.local"
+dest           = "$rl_tmp/dest_missing"
+
+[[link]]
+src            = "manifest.toml"
+requires_local = "$rl_tmp/present.local"
+dest           = "$rl_tmp/dest_present"
+EOF
+rl_out="$(MANIFEST="$rl_tmp/manifest.toml" "$REPO_ROOT/bin/doctor" 2>&1 || true)"
+if printf '%s' "$rl_out" | grep -qF "$rl_tmp/missing.local"; then
+  ok "flags missing required-local companion"
+else
+  fail "did not flag missing required-local companion"
+fi
+if printf '%s' "$rl_out" | grep -qF "$rl_tmp/present.local"; then
+  fail "incorrectly flagged a present required-local companion"
+else
+  ok "does not flag present required-local companion"
+fi
+rm -rf "$rl_tmp"
+
+# ---------------------------------------------------------------------------
 # Summary
 # ---------------------------------------------------------------------------
 echo ""

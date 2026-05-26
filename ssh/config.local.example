@@ -1,0 +1,17 @@
+# Example for ~/.ssh/config.local — host-specific SSH values kept OUT of the
+# public dotfiles repo (Tailscale tailnet/MagicDNS names, internal hostnames).
+# The tracked ssh/config pulls this in with `Include config.local`.
+#
+# Set it up on a new machine with:
+#
+#   cp ssh/config.local.example ~/.ssh/config.local   # then edit HostName
+#   chmod 600 ~/.ssh/config.local
+#
+# This file is intentionally untracked. `dots doctor` warns if
+# ~/.ssh/config.local is missing (manifest `requires_local`).
+
+# Pure-LAN fallback (no Tailscale): set HostName to the .lan name instead.
+# If off-LAN SSH hangs, the Mac's Tailscale likely dropped — toggle it:
+#   tailscale down && tailscale up   (or the menu-bar app)
+Host zachnas
+	HostName your-device.your-tailnet.ts.net

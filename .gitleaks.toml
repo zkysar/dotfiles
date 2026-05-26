@@ -3,6 +3,19 @@ title = "dotfiles gitleaks config"
 [extend]
 useDefault = true
 
+# Privacy guard: keep Tailscale tailnet/MagicDNS names out of this public repo.
+# Real host names belong in the untracked ~/.ssh/config.local; this fails a
+# commit if any "<label>.ts.net" string lands in a tracked file.
+[[rules]]
+id = "tailscale-magicdns-name"
+description = "Tailscale tailnet/MagicDNS name — set HostName in untracked ~/.ssh/config.local, not here"
+regex = '''[a-z0-9][a-z0-9-]*\.ts\.net'''
+tags = ["privacy", "tailscale"]
+
 [[allowlists]]
 description = "Pushover API documentation examples (third-party sample tokens, not real secrets)"
 paths = ['''claude/hooks/pushover\.md''']
+
+[[allowlists]]
+description = "ssh config.local.example intentionally uses a placeholder *.ts.net hostname"
+paths = ['''ssh/config\.local\.example''']

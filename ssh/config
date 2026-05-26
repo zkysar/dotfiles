@@ -1,0 +1,19 @@
+# SSH config (tracked, public). Host-specific details that shouldn't be
+# published — HostName, Tailscale tailnet/MagicDNS names, internal hostnames —
+# live in the untracked companion ~/.ssh/config.local, pulled in via the
+# Include below. Relative Include paths resolve against ~/.ssh, so this works
+# even though this file is a symlink into the dotfiles repo.
+#
+# See ssh/config.local.example for the expected shape. `dots doctor` verifies
+# the local file exists (manifest `requires_local`); a gitleaks rule blocks any
+# *.ts.net name from being committed into this public repo.
+Include config.local
+
+# Synology NAS (DS420+). Key auth via ~/.ssh/id_synology. Set up 2026-05-21.
+# HostName lives in config.local (Tailscale MagicDNS name, kept out of this
+# public repo). `ssh zachnas` works on the home LAN and off-LAN.
+Host zachnas
+	User zachkysar
+	Port 22
+	IdentityFile ~/.ssh/id_synology
+	IdentitiesOnly yes

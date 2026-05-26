@@ -4,17 +4,18 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-MANIFEST="$REPO_ROOT/manifest.toml"
+MANIFEST="${MANIFEST:-$REPO_ROOT/manifest.toml}"
 QUIET=0
 [ "${1:-}" = "--quiet" ] && QUIET=1
 
 parse_manifest() {
   awk '
-    /^\[\[link\]\]/ { in_link=1; src=""; dest=""; next }
-    in_link && /^src[[:space:]]*=/  { match($0, /"[^"]*"/); src  = substr($0, RSTART+1, RLENGTH-2) }
+    /^\[\[link\]\]/ { in_link=1; src=""; dest=""; rl=""; next }
+    in_link && /^src[[:space:]]*=/  { match($0, /"[^"]*"/); src = substr($0, RSTART+1, RLENGTH-2) }
+    in_link && /^requires_local[[:space:]]*=/ { match($0, /"[^"]*"/); rl = substr($0, RSTART+1, RLENGTH-2) }
     in_link && /^dest[[:space:]]*=/ {
       match($0, /"[^"]*"/); dest = substr($0, RSTART+1, RLENGTH-2)
-      if (src != "" && dest != "") print src "\t" dest
+      if (src != "" && dest != "") print src "\t" dest "\t" rl
       in_link=0
     }
   ' "$MANIFEST"
@@ -29,12 +30,14 @@ expand_home() {
 
 ok=0; bad=0
 issues=""
+missing_local=0; local_total=0
+local_issues=""
 
 EXPECTED_FILE="$(mktemp)"
 PARENTS_FILE="$(mktemp)"
 trap 'rm -f "$EXPECTED_FILE" "$PARENTS_FILE"' EXIT
 
-while IFS=$'\t' read -r src dest; do
+while IFS=$'\t' read -r src dest rl; do
   dest_abs="$(expand_home "$dest")"
   case "$src" in
     "~/"*) expected="$(expand_home "$src")" ;;
@@ -55,6 +58,18 @@ while IFS=$'\t' read -r src dest; do
       issues="${issues}  $dest (missing)"$'\n'
     else
       issues="${issues}  $dest (not our symlink)"$'\n'
+    fi
+  fi
+
+  # Optional untracked companion the linked config depends on (e.g. an
+  # Include'd ~/.ssh/config.local). Tracked file links fine without it, but the
+  # config is broken until it exists — flag the gap.
+  if [ -n "$rl" ]; then
+    local_total=$((local_total+1))
+    rl_abs="$(expand_home "$rl")"
+    if [ ! -e "$rl_abs" ] && [ ! -L "$rl_abs" ]; then
+      missing_local=$((missing_local+1))
+      local_issues="${local_issues}  $rl (required by $src; create it — see the repo's *.local.example)"$'\n'
     fi
   fi
 done < <(parse_manifest)
@@ -103,27 +118,29 @@ if git rev-parse "origin/$default_branch" &>/dev/null; then
 fi
 
 clean=1
-[ "$bad" -gt 0 ]       && clean=0
-[ "$orphans" -gt 0 ]   && clean=0
-[ "$git_count" -gt 0 ] && clean=0
-[ "$ahead" -gt 0 ]     && clean=0
-[ "$behind" -gt 0 ]    && clean=0
+[ "$bad" -gt 0 ]           && clean=0
+[ "$missing_local" -gt 0 ] && clean=0
+[ "$orphans" -gt 0 ]       && clean=0
+[ "$git_count" -gt 0 ]     && clean=0
+[ "$ahead" -gt 0 ]         && clean=0
+[ "$behind" -gt 0 ]        && clean=0
 
 if [ "$QUIET" = 1 ]; then
   if [ "$clean" = 0 ]; then
     only_unpushed=0
-    if [ "$ahead" -gt 0 ] && [ "$bad" -eq 0 ] && [ "$orphans" -eq 0 ] && [ "$git_count" -eq 0 ] && [ "$behind" -eq 0 ]; then
+    if [ "$ahead" -gt 0 ] && [ "$bad" -eq 0 ] && [ "$missing_local" -eq 0 ] && [ "$orphans" -eq 0 ] && [ "$git_count" -eq 0 ] && [ "$behind" -eq 0 ]; then
       only_unpushed=1
     fi
     if [ "$only_unpushed" = 1 ]; then
       echo "dotfiles: ${ahead} unpushed commit(s) — run 'dots push' to push"
     else
       parts=""
-      [ "$bad" -gt 0 ]       && parts="${parts}${bad} symlink issue(s) "
-      [ "$orphans" -gt 0 ]   && parts="${parts}${orphans} orphan symlink(s) "
-      [ "$git_count" -gt 0 ] && parts="${parts}${git_count} uncommitted change(s) "
-      [ "$ahead" -gt 0 ]     && parts="${parts}${ahead} unpushed commit(s) "
-      [ "$behind" -gt 0 ]    && parts="${parts}${behind} commit(s) behind remote "
+      [ "$bad" -gt 0 ]           && parts="${parts}${bad} symlink issue(s) "
+      [ "$missing_local" -gt 0 ] && parts="${parts}${missing_local} missing local file(s) "
+      [ "$orphans" -gt 0 ]       && parts="${parts}${orphans} orphan symlink(s) "
+      [ "$git_count" -gt 0 ]     && parts="${parts}${git_count} uncommitted change(s) "
+      [ "$ahead" -gt 0 ]         && parts="${parts}${ahead} unpushed commit(s) "
+      [ "$behind" -gt 0 ]        && parts="${parts}${behind} commit(s) behind remote "
       echo "dotfiles: ${parts}— run 'dots doctor' for detail"
     fi
     exit 1
@@ -143,6 +160,15 @@ if [ "$orphans" -gt 0 ]; then
   printf '%s' "$orphan_list"
 else
   echo "✓ no orphan symlinks"
+fi
+
+if [ "$local_total" -gt 0 ]; then
+  if [ "$missing_local" -eq 0 ]; then
+    echo "✓ $local_total/$local_total required local file(s) present"
+  else
+    echo "✗ $missing_local/$local_total required local file(s) missing:"
+    printf '%s' "$local_issues"
+  fi
 fi
 
 if [ "$git_count" -gt 0 ]; then
