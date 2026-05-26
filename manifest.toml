@@ -18,56 +18,71 @@ src  = "git/gitconfig"
 dest = "~/.gitconfig"
 
 # `requires_local` (optional) names an untracked companion file the linked
-# config depends on. `dots doctor` flags it if missing. Keep it BEFORE `dest`:
-# the awk parser emits the entry on the `dest` line, so later fields are lost.
+# config depends on. `dots doctor` flags it if missing.
+# `platform` ("macos"|"linux"|"all", default "all") and `requires_local` must
+# both appear BEFORE `dest`: the awk parser emits the entry on the `dest` line,
+# so any field after it is lost. `bin/link` skips entries whose platform != the
+# current OS (uname); the NAS toolbox links only "all"/"linux" entries.
 [[link]]
 src            = "ssh/config"
 requires_local = "~/.ssh/config.local"
+platform       = "macos"
 dest           = "~/.ssh/config"
 
 [[link]]
-src  = "claude/settings.json"
-dest = "~/.claude/settings.json"
+src      = "claude/settings.json"
+platform = "macos"
+dest     = "~/.claude/settings.json"
 
 [[link]]
-src  = "claude/CLAUDE.md"
-dest = "~/.claude/CLAUDE.md"
+src      = "claude/CLAUDE.md"
+platform = "macos"
+dest     = "~/.claude/CLAUDE.md"
 
 [[link]]
-src  = "claude/commands"
-dest = "~/.claude/commands"
+src      = "claude/commands"
+platform = "macos"
+dest     = "~/.claude/commands"
 
 [[link]]
-src  = "claude/hooks"
-dest = "~/.claude/hooks"
+src      = "claude/hooks"
+platform = "macos"
+dest     = "~/.claude/hooks"
 
 [[link]]
-src  = "claude/agents-library"
-dest = "~/.claude/agents-library"
+src      = "claude/agents-library"
+platform = "macos"
+dest     = "~/.claude/agents-library"
 
 [[link]]
-src  = "claude/mcp-library"
-dest = "~/.claude/mcp-library"
+src      = "claude/mcp-library"
+platform = "macos"
+dest     = "~/.claude/mcp-library"
 
 [[link]]
-src  = "claude/mcp-wrappers"
-dest = "~/.claude/mcp-wrappers"
+src      = "claude/mcp-wrappers"
+platform = "macos"
+dest     = "~/.claude/mcp-wrappers"
 
 [[link]]
-src  = "claude/output-styles"
-dest = "~/.claude/output-styles"
+src      = "claude/output-styles"
+platform = "macos"
+dest     = "~/.claude/output-styles"
 
 [[link]]
-src  = "claude/file-templates"
-dest = "~/.claude/file-templates"
+src      = "claude/file-templates"
+platform = "macos"
+dest     = "~/.claude/file-templates"
 
 [[link]]
-src  = "claude/skills"
-dest = "~/.claude/skills"
+src      = "claude/skills"
+platform = "macos"
+dest     = "~/.claude/skills"
 
 [[link]]
-src  = "claude/context"
-dest = "~/.claude/context"
+src      = "claude/context"
+platform = "macos"
+dest     = "~/.claude/context"
 
 [[link]]
 src  = "shell/completions"
@@ -78,28 +93,34 @@ src  = "git/hooks"
 dest = "~/.config/git/hooks"
 
 [[link]]
-src  = "ghostty/config"
-dest = "~/.config/ghostty/config"
+src      = "ghostty/config"
+platform = "macos"
+dest     = "~/.config/ghostty/config"
 
 [[link]]
-src  = "launchd/com.zachkysar.tmp-sweep.plist"
-dest = "~/Library/LaunchAgents/com.zachkysar.tmp-sweep.plist"
+src      = "launchd/com.zachkysar.tmp-sweep.plist"
+platform = "macos"
+dest     = "~/Library/LaunchAgents/com.zachkysar.tmp-sweep.plist"
 
 [[link]]
-src  = "tmp/CLAUDE.md"
-dest = "~/tmp/CLAUDE.md"
+src      = "tmp/CLAUDE.md"
+platform = "macos"
+dest     = "~/tmp/CLAUDE.md"
 
 [[link]]
-src  = "launchd/com.zachkysar.jpr-pipeline.plist"
-dest = "~/Library/LaunchAgents/com.zachkysar.jpr-pipeline.plist"
+src      = "launchd/com.zachkysar.jpr-pipeline.plist"
+platform = "macos"
+dest     = "~/Library/LaunchAgents/com.zachkysar.jpr-pipeline.plist"
 
 [[link]]
-src  = "launchd/com.zachkysar.paperstem-import.plist"
-dest = "~/Library/LaunchAgents/com.zachkysar.paperstem-import.plist"
+src      = "launchd/com.zachkysar.paperstem-import.plist"
+platform = "macos"
+dest     = "~/Library/LaunchAgents/com.zachkysar.paperstem-import.plist"
 
 [[link]]
-src  = "paperstem/import.json"
-dest = "~/.config/paperstem/import.json"
+src      = "paperstem/import.json"
+platform = "macos"
+dest     = "~/.config/paperstem/import.json"
 
 # External project repos (cloned by bin/bootstrap, linked here).
 # src may be ~/-rooted or absolute; bin/link handles both.
@@ -109,9 +130,11 @@ repo = "git@github.com:zkysar/media-import.git"
 path = "~/projects/utils/media-import"
 
 [[link]]
-src  = "~/projects/utils/media-import/media-import"
-dest = "~/.local/bin/media-import"
+src      = "~/projects/utils/media-import/media-import"
+platform = "macos"
+dest     = "~/.local/bin/media-import"
 
 [[link]]
-src  = "~/projects/utils/media-import/completions/_media-import"
-dest = "~/.zsh/external-completions/_media-import"
+src      = "~/projects/utils/media-import/completions/_media-import"
+platform = "macos"
+dest     = "~/.zsh/external-completions/_media-import"
