@@ -21,9 +21,10 @@ alias pip='pip3.11'
 alias gyroflow="/Applications/Gyroflow.app/Contents/MacOS/gyroflow"
 alias claude-mem='bun "/Users/zachkysar/.claude/plugins/cache/thedotmack/claude-mem/13.2.0/scripts/worker-service.cjs"'
 
-# NAS toolbox entry (rides existing ssh zachnas + passwordless sudo)
-alias nas="ssh -t zachnas 'sudo docker exec -it -u 1026:100 -w /volume1/homes/zachkysar toolbox zsh -l'"
-alias nas-update="ssh -t zachnas 'sudo docker exec -u 1026:100 toolbox sh -lc \"git -C \$HOME/projects/dotfiles pull --ff-only && \$HOME/projects/dotfiles/bin/link\"'"
+# NAS toolbox entry (rides existing ssh zachnas + passwordless sudo).
+# Full docker path: Container Manager's binary isn't on sudo's secure_path.
+alias nas="ssh -t zachnas 'sudo /usr/local/bin/docker exec -it -u 1026:100 -w /volume1/homes/zachkysar toolbox zsh -l'"
+alias nas-update="ssh -t zachnas 'sudo /usr/local/bin/docker exec -u 1026:100 toolbox sh -lc \"git -C \$HOME/projects/dotfiles pull --ff-only && \$HOME/projects/dotfiles/bin/link\"'"
 
 # Environment
 export FAKE_LMSTUDIO_KEY=123
