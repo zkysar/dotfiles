@@ -151,6 +151,26 @@ EOF
     echo "Note: Keeper record untouched — delete manually in Keeper if desired."
     ;;
 
+  nas-env)
+    if [ ! -f "$NAMES_FILE" ]; then
+      echo "error: no names list ($NAMES_FILE). Run 'dots keys sync' first." >&2
+      exit 1
+    fi
+    emitted=0
+    while IFS= read -r name; do
+      [ -z "$name" ] && continue
+      val=$(security find-generic-password -s "$name" -a "$USER" -w 2>/dev/null) || {
+        echo "warn: $name missing from Keychain" >&2; continue; }
+      [ -z "$val" ] && { echo "warn: $name empty in Keychain" >&2; continue; }
+      printf '%s=%s\n' "$name" "$val"
+      emitted=$((emitted + 1))
+    done < "$NAMES_FILE"
+    if [ "$emitted" -eq 0 ]; then
+      echo "error: emitted 0 secrets (Keychain locked?). Aborting." >&2
+      exit 1
+    fi
+    ;;
+
   *)
     cat >&2 <<EOF
 usage: keys <command>
@@ -158,6 +178,7 @@ usage: keys <command>
   add NAME [VALUE]  create a Keeper record and sync it to Keychain
                     (omit VALUE to be prompted; argv leaks to history and ps)
   list            show each env-var in the names list (present|MISSING in Keychain)
+  nas-env           emit NAME=value for the NAS toolbox (stdout only; macOS)
   sync            pull every ENV_VAR_STYLE-titled Keeper record into Keychain
   rm NAME         remove from Keychain (Keeper record untouched)
 
