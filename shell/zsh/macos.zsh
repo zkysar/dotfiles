@@ -23,7 +23,18 @@ alias claude-mem='bun "/Users/zachkysar/.claude/plugins/cache/thedotmack/claude-
 
 # NAS toolbox entry (rides existing ssh zachnas + passwordless sudo).
 # Full docker path: Container Manager's binary isn't on sudo's secure_path.
-alias nas="ssh -t zachnas 'sudo /usr/local/bin/docker exec -it -u 1026:100 -w /volume1/homes/zachkysar toolbox zsh -l'"
+nas() {
+  local enter="sudo /usr/local/bin/docker exec -it -u 1026:100 -w /volume1/homes/zachkysar toolbox toolbox-login"
+  if [ "$1" = "--bare" ]; then ssh -t zachnas "$enter"; return; fi
+  local f="/dev/shm/toolbox-secrets.$$.$RANDOM.env"
+  dots keys nas-env | ssh zachnas "sudo /usr/local/bin/docker exec -i -u 1026:100 toolbox sh -c 'umask 077; cat > $f'"
+  if [ "${pipestatus[1]}" -ne 0 ] || [ "${pipestatus[2]}" -ne 0 ]; then
+    echo "nas: no secrets injected (Keychain locked / connect failed). Use 'nas --bare' for a secret-less shell." >&2
+    ssh zachnas "sudo /usr/local/bin/docker exec -u 1026:100 toolbox rm -f $f" 2>/dev/null
+    return 1
+  fi
+  ssh -t zachnas "$enter $f"
+}
 alias nas-update="ssh -t zachnas 'sudo /usr/local/bin/docker exec -u 1026:100 toolbox sh -lc \"git -C \$HOME/projects/dotfiles pull --ff-only && \$HOME/projects/dotfiles/bin/link\"'"
 
 # Environment
