@@ -22,8 +22,14 @@ Host zachnas
 	# still surfaces real problems (host-key changes, connection failures). The
 	# proper fix is an OpenSSH upgrade on DSM.
 	LogLevel ERROR
-	# Multiplex connections: the `nas` function opens two ssh sessions per connect
-	# (inject secrets, then enter) — reuse one channel so the second is instant.
+	# Multiplex connections: every `ssh zachnas` reuses one shared master, so any
+	# connection while a master is alive is near-instant (no re-handshake). The
+	# master persists indefinitely (until closed / gone stale) so it's fast all
+	# the time. Keepalives let a dead master (Tailscale flap, NAS reboot) self-
+	# clean in ~3 min instead of hanging the next connect; `ssh -O exit zachnas`
+	# forces it closed.
 	ControlMaster auto
 	ControlPath ~/.ssh/cm-%r@%h:%p
-	ControlPersist 10m
+	ControlPersist yes
+	ServerAliveInterval 60
+	ServerAliveCountMax 3
