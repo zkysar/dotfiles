@@ -17,3 +17,8 @@ Host zachnas
 	Port 22
 	IdentityFile ~/.ssh/id_synology
 	IdentitiesOnly yes
+	# Silence the post-quantum-KEX warning the NAS's old OpenSSH 8.2 triggers on
+	# every connect (the `nas` function opens two, so it printed twice). ERROR
+	# still surfaces real problems (host-key changes, connection failures). The
+	# proper fix is an OpenSSH upgrade on DSM.
+	LogLevel ERROR
