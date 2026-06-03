@@ -3,9 +3,10 @@ set -euo pipefail
 
 DOTS_BIN="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# bootstrap (Homebrew) and keys (Keeper -> Keychain) are macOS-only. Off macOS
-# (e.g. the Linux toolbox container) they are hidden from usage and rejected with
-# a clear message instead of a confusing downstream error. DOTS_PLATFORM overrides
+# keys (Keeper -> Keychain) is macOS-only. Off macOS (e.g. the Linux toolbox
+# container) it is hidden from usage and rejected with a clear message instead of
+# a confusing downstream error. bootstrap and style work cross-platform (bootstrap
+# branches on the OS; style is a WSL no-op elsewhere). DOTS_PLATFORM overrides
 # detection (matches bin/link / bin/doctor).
 case "${DOTS_PLATFORM:-$(uname -s)}" in
   Darwin|macos) IS_MAC=1 ;;
@@ -23,27 +24,28 @@ Subcommands:
   unlink      Remove managed symlinks
   doctor      Report symlink health and uncommitted drift
   push        Push pending commits on the current branch to origin
+  bootstrap   Install packages (Homebrew on macOS, apt on Linux/WSL)
+  style       Apply the ghostty theme to Windows Terminal (WSL)
 EOF
   if [ "$IS_MAC" = 1 ]; then
     cat <<EOF
-  bootstrap   Install Homebrew packages (macOS only)
   keys        Keeper → Keychain sync — add / list / sync / rm (macOS only)
 EOF
   fi
 }
 
 case "${1:-}" in
-  link|unlink|doctor|push)
+  link|unlink|doctor|push|bootstrap|style)
     cmd="$1"; shift
     exec "$DOTS_BIN/$cmd" "$@"
     ;;
-  bootstrap|keys)
+  keys)
     if [ "$IS_MAC" = 1 ]; then
       cmd="$1"; shift
       exec "$DOTS_BIN/$cmd" "$@"
     fi
-    echo "dots: '$1' is macOS-only (Homebrew / Keeper-Keychain); not available here." >&2
-    echo "      In the Linux toolbox, tools come from the container image, not 'dots bootstrap'." >&2
+    echo "dots: 'keys' is macOS-only (Keeper → Keychain); not available here." >&2
+    echo "      In the Linux toolbox, secrets come from the container, not 'dots keys'." >&2
     exit 1
     ;;
   --help|-h)

@@ -1,10 +1,14 @@
 # dotfiles
 
-macOS dotfiles: shell, tmux, neovim, git, and Claude Code config. Public repo;
-no secrets committed. Secrets live in Keeper (authoritative) and mirror to
-macOS Keychain (fast, offline).
+macOS + Linux/WSL dotfiles: shell, tmux, neovim, git, and Claude Code config.
+Public repo; no secrets committed. On macOS, secrets live in Keeper
+(authoritative) and mirror to macOS Keychain (fast, offline). On Linux/WSL,
+secrets are out of scope — GitHub auth goes through the `gh` CLI.
 
-## Install (new machine)
+`dots bootstrap` detects the OS and runs the right path; `link`, `doctor`,
+`style`, and `push` are cross-platform. `keys` is macOS-only.
+
+## Install — macOS
 
 ```bash
 git clone https://github.com/zkysar/dotfiles ~/projects/dotfiles
@@ -17,6 +21,43 @@ dots keys sync    # pull ENV_VAR_STYLE-titled records from Keeper into Keychain
 
 Open a new terminal. Shell reads secrets from Keychain; Claude Code picks up
 `~/.claude/*` via the symlinks.
+
+## Install — Linux / WSL
+
+Supported on apt-based distros (Debian/Ubuntu, including Ubuntu-on-WSL). On
+other distros, install `git git-lfs neovim tmux fzf jq zsh` plus `gitleaks` and
+`gh` via your package manager, then skip to `bin/dots link`.
+
+```bash
+git clone https://github.com/zkysar/dotfiles ~/projects/dotfiles
+cd ~/projects/dotfiles
+bin/bootstrap     # apt packages + gitleaks + gh; on WSL also Fira Code +
+                  # Windows Terminal styling, and sets zsh as the login shell
+gh auth login     # one-time GitHub auth (the git credential helper delegates to gh)
+bin/dots link     # symlink everything into $HOME
+bin/dots doctor   # sanity check
+# open a new terminal — it lands in zsh with the styled prompt
+```
+
+Use `bin/dots` / `bin/bootstrap` (not bare `dots`) for the first run: the
+dotfiles `bin/` only joins `PATH` once you're in the new zsh shell. GitHub auth
+needs `gh` installed and `gh auth login` run — without it, git over HTTPS to
+GitHub fails. Secrets (Keeper → Keychain) are macOS-only; `dots keys` is
+rejected here.
+
+### Terminal styling (WSL)
+
+`ghostty/config` is the single source of truth for colors and font. On WSL
+there's no ghostty, so `dots style` translates that palette into a Windows
+Terminal color scheme (`dots-onedark`) and points the Ubuntu profile at it.
+`dots bootstrap` runs it automatically; re-run `dots style` after editing
+`ghostty/config`. `dots style --print-scheme` prints the derived scheme without
+writing anything.
+
+Windows Terminal renders fonts from Windows, not WSL. `dots style` installs
+Fira Code per-user on Windows automatically; if that warns or is skipped,
+install Fira Code on Windows yourself, then restart Windows Terminal to pick it
+up. (`dots style` is a safe no-op on macOS and non-WSL Linux.)
 
 ## Secrets model
 

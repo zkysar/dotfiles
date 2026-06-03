@@ -131,7 +131,10 @@ if [ -n "$git_status" ]; then
   git_count=$(printf '%s\n' "$git_status" | wc -l | tr -d ' ')
 fi
 
-default_branch="$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|refs/remotes/origin/||')"
+# `|| true`: a fresh checkout (e.g. CI's actions/checkout) has no
+# refs/remotes/origin/HEAD, so symbolic-ref fails; without this the pipefail +
+# set -e would abort doctor here, before the health summary is ever printed.
+default_branch="$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|refs/remotes/origin/||' || true)"
 default_branch="${default_branch:-main}"
 ahead=0; behind=0
 if git rev-parse "origin/$default_branch" &>/dev/null; then

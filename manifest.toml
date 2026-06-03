@@ -14,8 +14,14 @@ src  = "nvim"
 dest = "~/.config/nvim"
 
 [[link]]
-src  = "git/gitconfig"
-dest = "~/.gitconfig"
+src      = "git/gitconfig"
+platform = "macos"
+dest     = "~/.gitconfig"
+
+[[link]]
+src      = "git/gitconfig.linux"
+platform = "linux"
+dest     = "~/.gitconfig"
 
 # `requires_local` (optional) names an untracked companion file the linked
 # config depends on. `dots doctor` flags it if missing.

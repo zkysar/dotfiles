@@ -11,8 +11,13 @@ file in this repo — the symlink makes them one.
 - `dots link` — create symlinks. Safe to run repeatedly.
 - `dots unlink` — remove managed symlinks (does not restore backups)
 - `dots doctor` — report symlink health and uncommitted drift
-- `dots bootstrap` — install Homebrew packages and load dotfiles-managed LaunchAgents
-- `dots keys` — Keeper → Keychain one-way sync (`add` / `list` / `sync` / `rm`)
+- `dots bootstrap` — install packages (Homebrew on macOS; apt + gitleaks + gh on
+  Linux, plus Fira Code / Windows Terminal styling and chsh-to-zsh on WSL) and,
+  on macOS, clone project repos + load dotfiles-managed LaunchAgents
+- `dots style` — regenerate the Windows Terminal scheme + font from
+  `ghostty/config` (WSL only; safe no-op elsewhere). Re-run after editing
+  `ghostty/config`; `dots style --print-scheme` inspects the derived scheme
+- `dots keys` — Keeper → Keychain one-way sync (`add` / `list` / `sync` / `rm`), macOS-only
 - `dots push` — push pending commits on the current branch to origin
 
 ## Adding a new LaunchAgent
@@ -58,6 +63,19 @@ links the container creates (it links only `all`/`linux` entries).
 4. Run `dots link`.
 5. Commit.
 
+**Platform-specific links:** add an optional `platform = "macos"` or
+`platform = "linux"` field (default is `all`). `bin/link`, `bin/doctor`, and
+`bin/test` only act on entries matching the current OS (`DOTS_PLATFORM`
+overrides detection). Two entries can share a `dest` as long as they target
+different platforms — that's how `git/gitconfig` (macOS) and
+`git/gitconfig.linux` (linux) both map to `~/.gitconfig`:
+   ```toml
+   [[link]]
+   src      = "git/gitconfig.linux"
+   platform = "linux"
+   dest     = "~/.gitconfig"
+   ```
+
 ## Adding a new secret
 
 Never write a secret value into any file in this repo.
@@ -82,11 +100,13 @@ Alternatively, create the Keeper record manually and run `dots keys sync`.
 
 ## Testing
 
-`bin/test` runs four suites: manifest integrity, shell syntax, a secrets scan
-via `gitleaks` (configured by `.gitleaks.toml` at the repo root), and
-backup-pruning behavior. It runs automatically as a pre-commit hook (via
-`core.hooksPath` → `git/hooks/`). `gitleaks` is installed by `bin/bootstrap`;
-`bin/test` hard-fails if it's missing.
+`bin/test` runs platform-aware suites: manifest integrity, shell syntax, a
+secrets scan via `gitleaks` (configured by `.gitleaks.toml` at the repo root),
+backup-pruning, `requires_local` flagging, the `bin/link` platform filter,
+`bin/` script syntax, `bin/style` scheme + settings-transform derivation, and
+`bin/bootstrap`'s `release_arch` arch mapping. It runs automatically as a
+pre-commit hook (via `core.hooksPath` → `git/hooks/`). `gitleaks` is installed
+by `bin/bootstrap`; `bin/test` hard-fails if it's missing.
 
 When adding features that touch the manifest, shell files, or introduce new bin scripts with logic, add or extend `bin/test` accordingly. Examples:
 - New `manifest.toml` entry → covered automatically by the manifest integrity suite

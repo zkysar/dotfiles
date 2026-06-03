@@ -1,0 +1,202 @@
+#!/usr/bin/env bash
+# Apply the ghostty terminal theme to Windows Terminal (WSL).
+#
+# ghostty/config is the single source of truth for colors/font. On macOS the
+# ghostty app reads it directly; on WSL there is no ghostty, so this script
+# translates the palette into a Windows Terminal color scheme ("dots-onedark")
+# and points the Ubuntu profile at it. Idempotent — re-running updates in place.
+#
+#   bin/style                 apply to Windows Terminal settings.json (WSL only)
+#   bin/style --print-scheme  print the derived scheme JSON to stdout (no writes;
+#                             used by bin/test and for manual inspection)
+#   bin/style --render FILE   print FILE transformed by the styling pass to
+#                             stdout (no writes; the pure core of the apply step,
+#                             exercised by bin/test)
+set -euo pipefail
+
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+GHOSTTY="$REPO_ROOT/ghostty/config"
+SCHEME_NAME="dots-onedark"
+
+[ -f "$GHOSTTY" ] || { echo "style: $GHOSTTY not found" >&2; exit 1; }
+command -v jq >/dev/null 2>&1 || { echo "style: jq is required (run dots bootstrap)" >&2; exit 1; }
+
+# --- Parse ghostty/config -------------------------------------------------
+# `key = value` lines; palette lines are `palette = N=#hex`.
+_val() { sed -n "s/^$1[[:space:]]*=[[:space:]]*//p" "$GHOSTTY" | head -1; }
+
+BG="$(_val background)"
+FG="$(_val foreground)"
+FONT_FAMILY="$(_val font-family)"
+FONT_SIZE="$(_val font-size)"
+OPACITY_RAW="$(_val background-opacity)"   # e.g. 0.95
+PADDING_X="$(_val window-padding-x)"       # e.g. 12
+PADDING_Y="$(_val window-padding-y)"       # e.g. 10
+
+# Opacity: ghostty 0..1 float -> Windows Terminal 0..100 int.
+OPACITY=95
+if [ -n "$OPACITY_RAW" ]; then
+  OPACITY="$(awk -v o="$OPACITY_RAW" 'BEGIN{printf "%d", (o*100)+0.5}')"
+fi
+# Windows Terminal padding accepts "left, top, right, bottom"; map both ghostty
+# axes when present, else fall back to the single x value (default 8).
+[ -n "$PADDING_X" ] || PADDING_X=8
+if [ -n "$PADDING_Y" ]; then
+  PADDING="$PADDING_X,$PADDING_Y,$PADDING_X,$PADDING_Y"
+else
+  PADDING="$PADDING_X"
+fi
+[ -n "$FONT_FAMILY" ] || FONT_FAMILY="Fira Code"
+[ -n "$FONT_SIZE" ] || FONT_SIZE=13
+
+# palette index -> WT scheme key
+declare -A KEYMAP=(
+  [0]=black [1]=red [2]=green [3]=yellow [4]=blue [5]=purple [6]=cyan [7]=white
+  [8]=brightBlack [9]=brightRed [10]=brightGreen [11]=brightYellow
+  [12]=brightBlue [13]=brightPurple [14]=brightCyan [15]=brightWhite
+)
+
+# Build the scheme object with jq, feeding palette entries as --arg pairs.
+jq_args=(--arg name "$SCHEME_NAME" --arg background "$BG" --arg foreground "$FG")
+filter='{name:$name, background:$background, foreground:$foreground, cursorColor:$foreground, selectionBackground:$background}'
+
+while IFS= read -r line; do
+  # line like: palette = 0=#1a1a1a
+  rest="${line#*= }"          # 0=#1a1a1a
+  idx="${rest%%=*}"           # 0
+  hex="${rest#*=}"            # #1a1a1a
+  key="${KEYMAP[$idx]:-}"
+  [ -n "$key" ] || continue
+  jq_args+=(--arg "$key" "$hex")
+  filter="$filter | .$key=\$$key"
+  [ "$idx" = "8" ] && filter="$filter | .selectionBackground=\$$key"  # mid-grey selection
+done < <(grep -E '^palette[[:space:]]*=' "$GHOSTTY")
+
+SCHEME_JSON="$(jq -n "${jq_args[@]}" "$filter")"
+
+# Apply the scheme + Ubuntu-profile styling to a Windows Terminal settings JSON
+# file, printing the transformed JSON to stdout. Pure (no writes) so it backs
+# both the in-place apply path below and `--render` / bin/test. The schemes
+# merge is idempotent: any existing same-named scheme is dropped before append.
+render_settings() {
+  jq --argjson scheme "$SCHEME_JSON" \
+     --arg font "$FONT_FAMILY" --argjson size "$FONT_SIZE" \
+     --argjson opacity "$OPACITY" --arg padding "$PADDING" '
+    .schemes = ((.schemes // []) | map(select(.name != $scheme.name)) + [$scheme])
+    | .profiles.list = ((.profiles.list // []) | map(
+        if (.name == "Ubuntu")
+           or ((.commandline // "") | test("ubuntu|wsl"; "i"))
+           or ((.source // "") | test("ubuntu|wsl"; "i"))
+        then .colorScheme = $scheme.name
+           | .font = ((.font // {}) + {face: $font, size: $size})
+           | .opacity = $opacity
+           | .padding = $padding
+        else . end))
+  ' "$1"
+}
+
+if [ "${1:-}" = "--print-scheme" ]; then
+  printf '%s\n' "$SCHEME_JSON"
+  exit 0
+fi
+
+if [ "${1:-}" = "--render" ]; then
+  [ -n "${2:-}" ] || { echo "style: --render needs a settings.json path" >&2; exit 2; }
+  render_settings "$2"
+  exit 0
+fi
+
+# Install the font on Windows (per-user, no admin) if WT can't already see it.
+# Windows Terminal renders fonts from Windows, not WSL, so apt fonts won't help.
+# Idempotent: queries the installed font collection first and only downloads the
+# official Fira Code release when the family is missing.
+ensure_font_windows() {
+  [ "$FONT_FAMILY" = "Fira Code" ] || return 0   # only Fira Code is automated
+  command -v powershell.exe >/dev/null 2>&1 || {
+    echo "  (powershell.exe not found; install '$FONT_FAMILY' on Windows manually)" >&2
+    return 0
+  }
+  local ps_tmp ps_win out
+  ps_tmp="$(mktemp --suffix=.ps1)"
+  trap 'rm -f "$ps_tmp"' RETURN
+  cat > "$ps_tmp" <<'PSEOF'
+$ErrorActionPreference = 'Stop'
+Add-Type -AssemblyName System.Drawing
+$have = (New-Object System.Drawing.Text.InstalledFontCollection).Families.Name -contains 'Fira Code'
+if ($have) { Write-Output 'FONT_PRESENT'; exit 0 }
+
+$tmp = Join-Path $env:TEMP ('firacode-' + [guid]::NewGuid().ToString('N'))
+New-Item -ItemType Directory -Force -Path $tmp | Out-Null
+$zip = Join-Path $tmp 'FiraCode.zip'
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+Invoke-WebRequest -UseBasicParsing -Uri 'https://github.com/tonsky/FiraCode/releases/download/6.2/Fira_Code_v6.2.zip' -OutFile $zip
+Expand-Archive -Path $zip -DestinationPath $tmp -Force
+
+$fontsDir = Join-Path $env:LOCALAPPDATA 'Microsoft\Windows\Fonts'
+New-Item -ItemType Directory -Force -Path $fontsDir | Out-Null
+$regKey = 'HKCU:\Software\Microsoft\Windows NT\CurrentVersion\Fonts'
+$count = 0
+Get-ChildItem -Path $tmp -Recurse -Filter '*.ttf' | ForEach-Object {
+  $dest = Join-Path $fontsDir $_.Name
+  Copy-Item $_.FullName $dest -Force
+  $valName = [IO.Path]::GetFileNameWithoutExtension($_.Name) + ' (TrueType)'
+  New-ItemProperty -Path $regKey -Name $valName -Value $dest -PropertyType String -Force | Out-Null
+  $count++
+}
+Remove-Item -Recurse -Force $tmp -ErrorAction SilentlyContinue
+Write-Output ("FONT_INSTALLED:" + $count)
+PSEOF
+  ps_win="$(wslpath -w "$ps_tmp")"
+  # `|| true`: a nonzero powershell.exe exit must not abort under set -e — the
+  # case below is exactly the intended best-effort failure handling.
+  out="$(powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$ps_win" 2>&1 | tr -d '\r')" || true
+  case "$out" in
+    *FONT_PRESENT*)   echo "✓ Fira Code already installed on Windows" ;;
+    *FONT_INSTALLED*) echo "✓ Installed Fira Code on Windows (per-user). Restart Windows Terminal to pick it up." ;;
+    *) echo "  warn: Fira Code install may have failed:" >&2; printf '%s\n' "$out" | sed 's/^/    /' >&2 ;;
+  esac
+}
+
+# --- Apply to Windows Terminal (WSL only) ---------------------------------
+if ! grep -qi microsoft /proc/version 2>/dev/null; then
+  echo "style: not running under WSL; nothing to apply." >&2
+  echo "       (Use 'bin/style --print-scheme' to inspect the derived scheme.)" >&2
+  exit 0
+fi
+
+ensure_font_windows
+
+WT=""
+for cand in \
+  /mnt/c/Users/*/AppData/Local/Packages/Microsoft.WindowsTerminal*/LocalState/settings.json \
+  "/mnt/c/Users/"*"/AppData/Local/Microsoft/Windows Terminal/settings.json"; do
+  if [ -f "$cand" ] && [ -w "$cand" ]; then WT="$cand"; break; fi
+done
+[ -n "$WT" ] || { echo "style: no writable Windows Terminal settings.json found." >&2; exit 1; }
+
+if ! jq empty "$WT" 2>/dev/null; then
+  echo "style: $WT is not valid JSON (it may contain comments)." >&2
+  echo "       Skipping automatic edit to avoid corrupting it. Scheme to add manually:" >&2
+  printf '%s\n' "$SCHEME_JSON" >&2
+  exit 1
+fi
+
+BACKUP="$WT.dots-bak-$(date -u +%Y%m%dT%H%M%SZ)"
+cp "$WT" "$BACKUP"
+
+# Write to a temp file in the SAME directory as $WT so the final mv is a true
+# rename, not a cross-filesystem copy (mktemp's default $TMPDIR lives on the WSL
+# fs, $WT on /mnt/c — a copy there leaves a window where settings.json is
+# half-written). The trap cleans up the temp file on any early exit (e.g. a jq
+# failure), leaving the original untouched and the backup available.
+tmp="$(mktemp "${WT}.dots-tmp-XXXXXX")"
+trap 'rm -f "$tmp"' EXIT
+render_settings "$WT" > "$tmp"
+mv "$tmp" "$WT"
+trap - EXIT
+
+echo "✓ applied '$SCHEME_NAME' scheme + Fira Code to Ubuntu profile in:"
+echo "    $WT"
+echo "  backup: $BACKUP"
+echo "  Note: install the 'Fira Code' font on Windows or Windows Terminal falls"
+echo "        back to its default monospace font."
