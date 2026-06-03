@@ -33,3 +33,19 @@ Host zachnas
 	ControlPersist yes
 	ServerAliveInterval 60
 	ServerAliveCountMax 3
+
+# Windows laptop (RTX 2070 Max-Q) — sshd + Tailscale run inside WSL2. Key auth
+# via ~/.ssh/id_laptop. Set up 2026-06-03. HostName lives in config.local
+# (Tailscale MagicDNS name, kept out of this public repo). `ssh zachlaptop`
+# works on the home LAN and off-LAN. Note: WSL2 sshd only accepts connections
+# while the Windows host is awake and the WSL distro is running.
+Host zachlaptop
+	User zachkysar
+	Port 22
+	IdentityFile ~/.ssh/id_laptop
+	IdentitiesOnly yes
+	ControlMaster auto
+	ControlPath ~/.ssh/cm-%r@%h:%p
+	ControlPersist yes
+	ServerAliveInterval 60
+	ServerAliveCountMax 3
