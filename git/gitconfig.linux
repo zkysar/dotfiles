@@ -1,0 +1,26 @@
+# Git per-user configuration — Linux/WSL variant.
+# The macOS gitconfig uses Git Credential Manager (/usr/local/share/gcm-core),
+# which does not exist on Linux. Here we authenticate GitHub through the GitHub
+# CLI's credential helper instead. `gh` is installed to ~/.local/bin by
+# bin/bootstrap and put on PATH by shell/zsh/linux.zsh; run `gh auth login` once.
+# Token storage is owned by gh (its own host file / OS keyring) — the empty
+# `helper =` below clears any inherited helper first, so this intentionally
+# avoids writing a plaintext ~/.git-credentials.
+[user]
+	name = Zach Kysar
+	email = zach.kysar@gmail.com
+[init]
+	defaultBranch = main
+[credential "https://github.com"]
+	helper =
+	helper = !gh auth git-credential
+[credential "https://gist.github.com"]
+	helper =
+	helper = !gh auth git-credential
+[core]
+	hooksPath = ~/.config/git/hooks
+[filter "lfs"]
+	clean = git-lfs clean -- %f
+	smudge = git-lfs smudge -- %f
+	process = git-lfs filter-process
+	required = true
