@@ -1,8 +1,12 @@
 # Thin loader. Order matters:
 #   1. zsh-defer — used by both layers, must load first.
-#   2. macos.zsh — sets Homebrew/tool PATHs + env before common's tool-detection;
-#      its compinit-dependent completions are zsh-defer'd to run after common.
+#   2. platform layer (macos.zsh / linux.zsh) — sets tool PATHs + env before
+#      common's tool-detection; compinit-dependent completions are zsh-defer'd
+#      to run after common.
 #   3. common.zsh — portable; also sourced on the NAS toolbox container.
 source "$HOME/projects/dotfiles/shell/zsh-defer.plugin.zsh"
-[[ "$OSTYPE" == darwin* ]] && source "$HOME/projects/dotfiles/shell/zsh/macos.zsh"
+case "$OSTYPE" in
+  darwin*) source "$HOME/projects/dotfiles/shell/zsh/macos.zsh" ;;
+  linux*)  source "$HOME/projects/dotfiles/shell/zsh/linux.zsh" ;;
+esac
 source "$HOME/projects/dotfiles/shell/zsh/common.zsh"
