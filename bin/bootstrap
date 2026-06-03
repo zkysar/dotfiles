@@ -1,47 +1,78 @@
 #!/usr/bin/env bash
-# macOS bootstrap: install Homebrew + packages this setup depends on.
-# Idempotent. Does NOT create symlinks. Does NOT sync secrets.
+# Bootstrap: install the packages this setup depends on. Idempotent.
+# Does NOT sync secrets and does NOT create symlinks.
+#
+#   macOS : Homebrew + packages, clone [[project]] repos, load LaunchAgents.
+#   Linux : apt packages + gitleaks + gh (GitHub CLI); on WSL also install Fira
+#           Code, apply Windows Terminal styling, and switch the login shell to
+#           zsh. (Project repos / launchd are macOS-only and skipped.)
+#
+# Linking is a deliberate separate step — run `dots link` afterward (see the
+# "Next steps" output). Safe to re-run.
 set -euo pipefail
 
-if [[ "$OSTYPE" != "darwin"* ]]; then
-  echo "error: macOS only (got $OSTYPE)" >&2
-  exit 1
-fi
-
-if ! command -v brew >/dev/null 2>&1; then
-  echo "Installing Homebrew…"
-  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-  if [ -x /opt/homebrew/bin/brew ]; then
-    eval "$(/opt/homebrew/bin/brew shellenv)"
-  fi
-fi
-
-echo "Updating Homebrew…"
-brew update
-
-echo "Tapping third-party brew repos…"
-for tap in vincentkoc/tap; do
-  if brew tap | grep -qx "$tap"; then
-    echo "✓ tap $tap"
-  else
-    echo "→ tapping $tap"
-    brew tap "$tap"
-  fi
-done
-
-for pkg in git neovim tmux fzf jq keepercommander gitleaks tokenjuice; do
-  if brew list "$pkg" >/dev/null 2>&1; then
-    echo "✓ $pkg"
-  else
-    echo "→ installing $pkg"
-    brew install "$pkg"
-  fi
-done
-
-echo ""
-echo "Cloning declared project repos…"
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 MANIFEST="$REPO_ROOT/manifest.toml"
+
+# ===========================================================================
+# macOS
+# ===========================================================================
+bootstrap_macos() {
+  if ! command -v brew >/dev/null 2>&1; then
+    echo "Installing Homebrew…"
+    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+    if [ -x /opt/homebrew/bin/brew ]; then
+      eval "$(/opt/homebrew/bin/brew shellenv)"
+    fi
+  fi
+
+  echo "Updating Homebrew…"
+  brew update
+
+  echo "Tapping third-party brew repos…"
+  for tap in vincentkoc/tap; do
+    if brew tap | grep -qx "$tap"; then
+      echo "✓ tap $tap"
+    else
+      echo "→ tapping $tap"
+      brew tap "$tap"
+    fi
+  done
+
+  for pkg in git neovim tmux fzf jq keepercommander gitleaks tokenjuice; do
+    if brew list "$pkg" >/dev/null 2>&1; then
+      echo "✓ $pkg"
+    else
+      echo "→ installing $pkg"
+      brew install "$pkg"
+    fi
+  done
+
+  echo ""
+  echo "Cloning declared project repos…"
+  while IFS=$'\t' read -r repo path; do
+    [ -z "$repo" ] && continue
+    path_abs="${path/#\~/$HOME}"
+    if [ -d "$path_abs/.git" ]; then
+      echo "✓ $path"
+    else
+      echo "→ cloning $repo to $path"
+      mkdir -p "$(dirname "$path_abs")"
+      if ! git clone "$repo" "$path_abs"; then
+        echo "  warn: clone failed; skipping (run bin/link after fixing)" >&2
+      fi
+    fi
+  done < <(parse_projects)
+
+  echo ""
+  echo "Loading dotfiles-managed LaunchAgents…"
+  for plist in ~/Library/LaunchAgents/com.zachkysar.*.plist; do
+    [[ -e "$plist" ]] || continue
+    launchctl load "$plist" 2>/dev/null || true
+    echo "✓ $(basename "$plist")"
+  done
+
+}
 
 parse_projects() {
   awk '
@@ -55,30 +86,166 @@ parse_projects() {
   ' "$MANIFEST"
 }
 
-while IFS=$'\t' read -r repo path; do
-  [ -z "$repo" ] && continue
-  path_abs="${path/#\~/$HOME}"
-  if [ -d "$path_abs/.git" ]; then
-    echo "✓ $path"
-  else
-    echo "→ cloning $repo to $path"
-    mkdir -p "$(dirname "$path_abs")"
-    if ! git clone "$repo" "$path_abs"; then
-      echo "  warn: clone failed; skipping (run bin/link after fixing)" >&2
-    fi
+# ===========================================================================
+# Linux / WSL
+# ===========================================================================
+is_wsl() { grep -qi microsoft /proc/version 2>/dev/null; }
+
+# Map `uname -m` to a release-asset arch token. Vendors differ: gitleaks ships
+# linux_x64 / linux_arm64, the GitHub CLI ships linux_amd64 / linux_arm64.
+# DOTS_UNAME_M overrides the detected arch (used by bin/test). Returns non-zero
+# on an unsupported arch so callers can warn and skip.
+release_arch() {
+  local vendor="$1" m="${DOTS_UNAME_M:-$(uname -m)}"
+  case "$vendor:$m" in
+    gitleaks:x86_64|gitleaks:amd64)  echo x64 ;;
+    gitleaks:aarch64|gitleaks:arm64) echo arm64 ;;
+    gh:x86_64|gh:amd64)              echo amd64 ;;
+    gh:aarch64|gh:arm64)             echo arm64 ;;
+    *) return 1 ;;
+  esac
+}
+
+# Resolve a GitHub repo's latest release version (vX.Y.Z → X.Y.Z). Prints empty
+# and returns 0 on any failure (network blip, anonymous-API rate limit, parse
+# miss) so the caller degrades gracefully instead of aborting under set -e.
+latest_release() {
+  local repo="$1" ver
+  ver="$(curl -fsSL "https://api.github.com/repos/$repo/releases/latest" 2>/dev/null \
+        | grep -oP '"tag_name":\s*"v?\K[^"]+' | head -1 || true)"
+  [[ "$ver" =~ ^[0-9]+\.[0-9]+\.[0-9]+ ]] && printf '%s' "$ver"
+}
+
+# Verify file $1's sha256 against the entry for its basename in checksum file $2
+# (sha256sum format: "<hash>  <name>"). Warns and returns non-zero on a missing
+# entry or mismatch, so an unverified binary is never installed.
+verify_sha256() {
+  local file="$1" sums="$2" name expected actual
+  name="$(basename "$file")"
+  expected="$(grep -E " $name\$" "$sums" 2>/dev/null | awk '{print $1}' | head -1)"
+  if [ -z "$expected" ]; then
+    echo "  warn: no checksum entry for $name; refusing unverified download" >&2
+    return 1
   fi
-done < <(parse_projects)
+  actual="$(sha256sum "$file" | awk '{print $1}')"
+  if [ "$actual" != "$expected" ]; then
+    echo "  warn: checksum mismatch for $name (expected $expected, got $actual)" >&2
+    return 1
+  fi
+}
 
-echo ""
-echo "Loading dotfiles-managed LaunchAgents…"
-for plist in ~/Library/LaunchAgents/com.zachkysar.*.plist; do
-  [[ -e "$plist" ]] || continue
-  launchctl load "$plist" 2>/dev/null || true
-  echo "✓ $(basename "$plist")"
-done
+# Install gitleaks to ~/.local/bin from its GitHub release (no sudo, checksum
+# verified). apt has no reliable gitleaks package, and gitleaks is the secret-leak
+# gatekeeper run by the git hooks + bin/test, so it is installed directly here.
+install_gitleaks() {
+  if command -v gitleaks >/dev/null 2>&1; then
+    echo "✓ gitleaks"
+    return
+  fi
+  local ver arch asset base tmp
+  ver="$(latest_release gitleaks/gitleaks)"
+  [ -n "$ver" ] || { echo "  warn: could not resolve latest gitleaks version (GitHub API rate limit?); install it manually" >&2; return; }
+  arch="$(release_arch gitleaks)" || { echo "  warn: unsupported arch $(uname -m); skipping gitleaks" >&2; return; }
+  echo "→ installing gitleaks $ver (GitHub release → ~/.local/bin)"
+  asset="gitleaks_${ver}_linux_${arch}.tar.gz"
+  base="https://github.com/gitleaks/gitleaks/releases/download/v${ver}"
+  tmp="$(mktemp -d)"
+  if curl -fsSL -o "$tmp/$asset" "$base/$asset" \
+     && curl -fsSL -o "$tmp/checksums" "$base/gitleaks_${ver}_checksums.txt" \
+     && verify_sha256 "$tmp/$asset" "$tmp/checksums" \
+     && tar -xzf "$tmp/$asset" -C "$tmp" gitleaks; then
+    mkdir -p "$HOME/.local/bin"
+    install -m 0755 "$tmp/gitleaks" "$HOME/.local/bin/gitleaks"
+    echo "  installed gitleaks $ver (checksum verified)"
+  else
+    echo "  warn: gitleaks install failed/unverified; install it manually" >&2
+  fi
+  rm -rf "$tmp"
+}
 
-echo ""
-echo "Next steps:"
-echo "  dots link           # create symlinks per manifest.toml"
-echo "  dots keys sync      # after Keeper records exist, mirror into Keychain"
-echo "  dots doctor         # sanity check"
+# Install the GitHub CLI to ~/.local/bin from its release (no sudo, checksum
+# verified). gh is absent from older apt repos and git/gitconfig.linux routes all
+# GitHub credential ops through `gh auth git-credential`, so it is a hard Linux
+# dependency. Run `gh auth login` once afterward to authenticate.
+install_gh() {
+  if command -v gh >/dev/null 2>&1; then
+    echo "✓ gh"
+    return
+  fi
+  local ver arch asset base tmp
+  ver="$(latest_release cli/cli)"
+  [ -n "$ver" ] || { echo "  warn: could not resolve latest gh version; install it manually" >&2; return; }
+  arch="$(release_arch gh)" || { echo "  warn: unsupported arch $(uname -m); skipping gh" >&2; return; }
+  echo "→ installing gh $ver (GitHub release → ~/.local/bin)"
+  asset="gh_${ver}_linux_${arch}.tar.gz"
+  base="https://github.com/cli/cli/releases/download/v${ver}"
+  tmp="$(mktemp -d)"
+  if curl -fsSL -o "$tmp/$asset" "$base/$asset" \
+     && curl -fsSL -o "$tmp/checksums" "$base/gh_${ver}_checksums.txt" \
+     && verify_sha256 "$tmp/$asset" "$tmp/checksums" \
+     && tar -xzf "$tmp/$asset" -C "$tmp"; then
+    mkdir -p "$HOME/.local/bin"
+    install -m 0755 "$tmp/gh_${ver}_linux_${arch}/bin/gh" "$HOME/.local/bin/gh"
+    echo "  installed gh $ver (checksum verified)"
+  else
+    echo "  warn: gh install failed/unverified; install it manually" >&2
+  fi
+  rm -rf "$tmp"
+}
+
+bootstrap_linux() {
+  command -v apt-get >/dev/null 2>&1 || {
+    echo "error: Linux bootstrap currently supports apt-based distros only." >&2
+    echo "       On other distros install git git-lfs neovim tmux fzf jq zsh," >&2
+    echo "       plus gitleaks and gh, via your package manager, then run" >&2
+    echo "       bin/dots link." >&2
+    exit 1
+  }
+
+  echo "Installing apt packages (sudo)…"
+  sudo apt-get update
+  sudo apt-get install -y git git-lfs neovim tmux fzf jq zsh
+
+  echo ""
+  install_gitleaks
+  install_gh
+
+  if is_wsl; then
+    echo ""
+    echo "Applying Windows Terminal styling…"
+    "$REPO_ROOT/bin/style" || echo "  warn: styling step failed (non-fatal)" >&2
+  fi
+
+  # Switch the login shell to zsh. Compare against the passwd login shell, not
+  # $SHELL — $SHELL reflects the *current* process (e.g. a manually-started zsh)
+  # and can be stale, causing the real chsh to be skipped.
+  local zsh_path login_shell
+  zsh_path="$(command -v zsh || true)"
+  login_shell="$(getent passwd "$USER" 2>/dev/null | cut -d: -f7)"
+  if [ -n "$zsh_path" ] && [ "$login_shell" != "$zsh_path" ]; then
+    echo ""
+    echo "Setting default shell to zsh ($zsh_path)…"
+    grep -qxF "$zsh_path" /etc/shells 2>/dev/null || \
+      echo "$zsh_path" | sudo tee -a /etc/shells >/dev/null
+    chsh -s "$zsh_path" || echo "  warn: chsh failed; run 'chsh -s $zsh_path' manually" >&2
+  fi
+
+  echo ""
+  echo "Next steps:"
+  echo "  gh auth login       # one-time GitHub auth (git credential helper delegates to gh)"
+  echo "  bin/dots link       # create symlinks per manifest.toml"
+  echo "  bin/dots doctor     # sanity check"
+  echo "  open a new terminal # lands in zsh with the styled prompt"
+}
+
+# ===========================================================================
+# Dispatch (skipped when sourced as a library, e.g. DOTS_BOOTSTRAP_LIB=1 by
+# bin/test, which unit-tests the helpers above without running an install).
+# ===========================================================================
+if [ -z "${DOTS_BOOTSTRAP_LIB:-}" ]; then
+  case "$(uname -s)" in
+    Darwin) bootstrap_macos ;;
+    Linux)  bootstrap_linux ;;
+    *)      echo "error: unsupported OS $(uname -s)" >&2; exit 1 ;;
+  esac
+fi
