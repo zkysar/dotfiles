@@ -49,12 +49,19 @@ fi
 [ -n "$FONT_FAMILY" ] || FONT_FAMILY="Fira Code"
 [ -n "$FONT_SIZE" ] || FONT_SIZE=13
 
-# palette index -> WT scheme key
-declare -A KEYMAP=(
-  [0]=black [1]=red [2]=green [3]=yellow [4]=blue [5]=purple [6]=cyan [7]=white
-  [8]=brightBlack [9]=brightRed [10]=brightGreen [11]=brightYellow
-  [12]=brightBlue [13]=brightPurple [14]=brightCyan [15]=brightWhite
-)
+# palette index -> WT scheme key. Implemented as a case (not an associative
+# array) so the script runs under Bash 3.2 — macOS's system bash, exercised by
+# bin/test on a Mac. Returns empty for unknown indices.
+_keymap() {
+  case "$1" in
+    0)  echo black ;;       1)  echo red ;;         2)  echo green ;;
+    3)  echo yellow ;;      4)  echo blue ;;        5)  echo purple ;;
+    6)  echo cyan ;;        7)  echo white ;;       8)  echo brightBlack ;;
+    9)  echo brightRed ;;   10) echo brightGreen ;; 11) echo brightYellow ;;
+    12) echo brightBlue ;;  13) echo brightPurple ;; 14) echo brightCyan ;;
+    15) echo brightWhite ;; *)  echo "" ;;
+  esac
+}
 
 # Build the scheme object with jq, feeding palette entries as --arg pairs.
 jq_args=(--arg name "$SCHEME_NAME" --arg background "$BG" --arg foreground "$FG")
@@ -65,7 +72,7 @@ while IFS= read -r line; do
   rest="${line#*= }"          # 0=#1a1a1a
   idx="${rest%%=*}"           # 0
   hex="${rest#*=}"            # #1a1a1a
-  key="${KEYMAP[$idx]:-}"
+  key="$(_keymap "$idx")"
   [ -n "$key" ] || continue
   jq_args+=(--arg "$key" "$hex")
   filter="$filter | .$key=\$$key"
