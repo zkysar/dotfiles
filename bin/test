@@ -10,11 +10,26 @@ pass=0; fail=0
 ok()   { echo "  ✓ $*"; pass=$((pass+1)); }
 fail() { echo "  ✗ $*"; fail=$((fail+1)); }
 
+# Current OS (mirrors bin/link / bin/doctor). Entries tagged with a
+# non-matching `platform` are skipped — e.g. macOS-only external paths are not
+# expected to exist on Linux.
+case "$(uname -s)" in
+  Darwin) THIS_PLATFORM=macos ;;
+  Linux)  THIS_PLATFORM=linux ;;
+  *)      THIS_PLATFORM=unknown ;;
+esac
+THIS_PLATFORM="${DOTS_PLATFORM:-$THIS_PLATFORM}"
+
 # ---------------------------------------------------------------------------
-# 1. Manifest integrity — every src path must exist in the repo
+# 1. Manifest integrity — every src path for this platform must exist
 # ---------------------------------------------------------------------------
 echo "1. Manifest integrity"
-while IFS= read -r src; do
+while IFS=$'\t' read -r src platform; do
+  [ -z "$src" ] && continue
+  platform="${platform:-all}"
+  if [ "$platform" != "all" ] && [ "$platform" != "$THIS_PLATFORM" ]; then
+    continue
+  fi
   case "$src" in
     "~/"*) check_path="${src/#\~/$HOME}" ;;
     /*)    check_path="$src" ;;
@@ -25,7 +40,15 @@ while IFS= read -r src; do
   else
     fail "$src (missing from repo or external path)"
   fi
-done < <(awk '/^src[[:space:]]*=/ { match($0, /"[^"]*"/); print substr($0, RSTART+1, RLENGTH-2) }' "$MANIFEST")
+done < <(awk '
+  /^\[\[link\]\]/ { in_link=1; src=""; platform=""; next }
+  in_link && /^src[[:space:]]*=/      { match($0, /"[^"]*"/); src      = substr($0, RSTART+1, RLENGTH-2) }
+  in_link && /^platform[[:space:]]*=/ { match($0, /"[^"]*"/); platform = substr($0, RSTART+1, RLENGTH-2) }
+  in_link && /^dest[[:space:]]*=/ {
+    if (src != "") print src "\t" platform
+    in_link=0
+  }
+' "$MANIFEST")
 
 # ---------------------------------------------------------------------------
 # 2. Shell syntax check
@@ -138,6 +161,98 @@ else
   fail "platform filter wrong: linux=$([ -L "$pf_tmp/dest_linux" ] && echo L) all=$([ -L "$pf_tmp/dest_all" ] && echo L) macos=$([ -e "$pf_tmp/dest_macos" ] && echo present)"
 fi
 rm -rf "$pf_tmp"
+
+# ---------------------------------------------------------------------------
+# 7. bin/ script syntax — every executable script must parse
+# ---------------------------------------------------------------------------
+echo "7. bin/ syntax"
+while IFS= read -r -d '' f; do
+  rel="${f#$REPO_ROOT/}"
+  # Only shell scripts; skip symlinks (e.g. bin/obsidian) and non-scripts.
+  [ -L "$f" ] && continue
+  head -1 "$f" | grep -q '^#!.*\(bash\|sh\)' || continue
+  if bash -n "$f" 2>/dev/null; then
+    ok "$rel"
+  else
+    fail "$rel (syntax error)"
+  fi
+done < <(find "$REPO_ROOT/bin" -maxdepth 1 -type f -print0)
+
+# ---------------------------------------------------------------------------
+# 8. bin/style — derives a valid 16-color scheme from ghostty/config
+# ---------------------------------------------------------------------------
+echo "8. style scheme"
+if ! command -v jq >/dev/null 2>&1; then
+  fail "jq not installed — run bin/bootstrap"
+else
+  # Capture the exit code and reject empty output explicitly: `jq empty` returns
+  # 0 on an empty file, so without these guards a crashed bin/style would pass
+  # the "valid JSON" check on no output at all.
+  style_tmp="$(mktemp)"
+  if ! "$REPO_ROOT/bin/style" --print-scheme > "$style_tmp" 2>/dev/null; then
+    fail "bin/style --print-scheme exited non-zero"
+  elif [ ! -s "$style_tmp" ]; then
+    fail "bin/style --print-scheme produced no output"
+  elif jq empty "$style_tmp" 2>/dev/null; then
+    ok "scheme is valid JSON"
+  else
+    fail "scheme is not valid JSON (output: $(cat "$style_tmp"))"
+  fi
+  # name + the 16 ANSI color keys must all be present.
+  missing=""
+  for k in name black red green yellow blue purple cyan white \
+           brightBlack brightRed brightGreen brightYellow brightBlue \
+           brightPurple brightCyan brightWhite; do
+    jq -e --arg k "$k" 'has($k)' "$style_tmp" >/dev/null 2>&1 || missing="$missing $k"
+  done
+  if [ -z "$missing" ]; then
+    ok "scheme has name + all 16 ANSI colors"
+  else
+    fail "scheme missing keys:$missing"
+  fi
+  rm -f "$style_tmp"
+
+  # The settings.json transform (the part that mutates a real WT config) must:
+  # merge exactly one dots-onedark scheme (idempotent — fixture already has one),
+  # restyle the Ubuntu profile, and leave unrelated profiles untouched.
+  wt_tmp="$(mktemp)"
+  cat > "$wt_tmp" <<'EOF'
+{"schemes":[{"name":"dots-onedark"},{"name":"Campbell"}],
+ "profiles":{"list":[{"name":"Ubuntu"},{"name":"PowerShell"}]}}
+EOF
+  rendered="$("$REPO_ROOT/bin/style" --render "$wt_tmp" 2>/dev/null || true)"
+  if [ -z "$rendered" ] || ! jq empty <<<"$rendered" 2>/dev/null; then
+    fail "bin/style --render produced no/invalid JSON"
+  else
+    n_scheme="$(jq '[.schemes[] | select(.name=="dots-onedark")] | length' <<<"$rendered")"
+    ubuntu_cs="$(jq -r '.profiles.list[] | select(.name=="Ubuntu") | .colorScheme // ""' <<<"$rendered")"
+    ps_styled="$(jq -r '.profiles.list[] | select(.name=="PowerShell") | has("colorScheme")' <<<"$rendered")"
+    if [ "$n_scheme" = "1" ] && [ "$ubuntu_cs" = "dots-onedark" ] && [ "$ps_styled" = "false" ]; then
+      ok "settings transform: idempotent scheme merge, Ubuntu styled, others untouched"
+    else
+      fail "settings transform wrong (schemes=$n_scheme ubuntu_cs=$ubuntu_cs ps_styled=$ps_styled)"
+    fi
+  fi
+  rm -f "$wt_tmp"
+fi
+
+# ---------------------------------------------------------------------------
+# 9. bootstrap release_arch — uname -m → vendor asset arch token
+# ---------------------------------------------------------------------------
+echo "9. bootstrap arch mapping"
+arch_check="$(DOTS_BOOTSTRAP_LIB=1 bash -c '
+  source "'"$REPO_ROOT"'/bin/bootstrap"
+  [ "$(DOTS_UNAME_M=x86_64  release_arch gitleaks)" = "x64"   ] &&
+  [ "$(DOTS_UNAME_M=aarch64 release_arch gitleaks)" = "arm64" ] &&
+  [ "$(DOTS_UNAME_M=x86_64  release_arch gh)"       = "amd64" ] &&
+  [ "$(DOTS_UNAME_M=aarch64 release_arch gh)"       = "arm64" ] &&
+  ! DOTS_UNAME_M=riscv64 release_arch gitleaks >/dev/null 2>&1 &&
+  echo OK' 2>/dev/null || true)"
+if [ "$arch_check" = "OK" ]; then
+  ok "release_arch maps x86_64/aarch64 for gitleaks+gh and rejects unknown"
+else
+  fail "release_arch mapping incorrect"
+fi
 
 # ---------------------------------------------------------------------------
 # Summary
