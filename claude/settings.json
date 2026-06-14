@@ -1,7 +1,6 @@
 {
   "permissions": {
     "allow": [
-      "Read:~/.davinci-mcp/**",
       "mcp__mermaid__generate_mermaid_diagram",
       "Bash(obsidian *)"
     ],
@@ -86,5 +85,6 @@
   "feedbackSurveyState": {
     "lastShownTime": 1755134822529
   },
-  "defaultOutputStyle": "sr-software-developer"
+  "defaultOutputStyle": "sr-software-developer",
+  "skipWorkflowUsageWarning": true
 }
