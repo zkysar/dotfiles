@@ -1,0 +1,4 @@
+#!/bin/sh
+# GIMP GUI launcher -> binary inside the app bundle (GIMP 3.2).
+# Tracked in dotfiles; mirrors the `obsidian` shim in this dir.
+exec /Applications/GIMP.app/Contents/MacOS/gimp "$@"

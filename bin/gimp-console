@@ -1,0 +1,6 @@
+#!/bin/sh
+# Headless GIMP for scripting/batch (Script-Fu or Python-Fu).
+# Example (Python-Fu, no GUI, exit when done):
+#   gimp-console -idf --batch-interpreter=python-fu-eval \
+#       -b 'import sys; ...' -b 'pdb.gimp_quit(0)'
+exec /Applications/GIMP.app/Contents/MacOS/gimp-console "$@"
