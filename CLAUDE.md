@@ -98,6 +98,27 @@ This creates the Keeper record and syncs to Keychain in one step. Open a new ter
 
 Alternatively, create the Keeper record manually and run `dots keys sync`.
 
+### Generating a secret you never see
+
+When you need a fresh *random* value (rather than one you already have), use
+`gen` instead of `add`:
+
+```bash
+dots keys gen MY_SECRET_NAME            # 32-char random, refuses to clobber
+dots keys gen MY_SECRET_NAME --length 64
+dots keys gen MY_SECRET_NAME --rotate   # create-or-overwrite (upsert)
+dots keys gen MY_SECRET_NAME --dry-run  # print the keeper command, run nothing
+```
+
+The value is generated *inside Keeper* via its `$GEN:rand,<length>` token
+(Keeper's CSPRNG): only the literal template reaches `keeper`'s argv, so the
+secret never touches the command line, shell history, `ps`, stdout, the
+terminal, or this repo — you never see it, and neither does Claude's
+transcript. It then syncs to Keychain and exports as `$MY_SECRET_NAME` like any
+other env var. Like `add`, run it **yourself** — Claude is still denied from
+invoking `keeper`. `$GEN:rand` supports only length (verified against Commander
+source), so there is no symbol-exclusion flag.
+
 ## Testing
 
 `bin/test` runs platform-aware suites: manifest integrity, shell syntax, a

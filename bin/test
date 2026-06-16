@@ -255,6 +255,65 @@ else
 fi
 
 # ---------------------------------------------------------------------------
+# 10. keys gen — arg parsing, validation, and the offline --dry-run template
+#     (--dry-run makes no keeper/jq call, so this is safe in CI on any OS)
+# ---------------------------------------------------------------------------
+echo "10. keys gen (dry-run + validation)"
+KEYS="$REPO_ROOT/bin/keys"
+
+# Helper: run keys gen, capture stdout+stderr and the real exit code without
+# tripping `set -e` (a failing command substitution in an assignment is fatal
+# otherwise; the && / || chain suppresses that and preserves the code).
+gen_out=""; gen_rc=0
+run_gen() { gen_out="$(bash "$KEYS" gen "$@" 2>&1)" && gen_rc=0 || gen_rc=$?; }
+
+run_gen GEN_TEST_TOKEN --dry-run
+if [ "$gen_rc" -eq 0 ] && printf '%s' "$gen_out" | grep -qF 'record-add' \
+   && printf '%s' "$gen_out" | grep -qF '$GEN:rand,32'; then
+  ok "default dry-run emits record-add with \$GEN:rand,32"
+else
+  fail "default dry-run wrong (rc=$gen_rc out: $gen_out)"
+fi
+
+run_gen GEN_TEST_TOKEN --length 48 --dry-run
+if [ "$gen_rc" -eq 0 ] && printf '%s' "$gen_out" | grep -qF '$GEN:rand,48'; then
+  ok "--length is honored in the template"
+else
+  fail "--length not honored (rc=$gen_rc out: $gen_out)"
+fi
+
+run_gen GEN_TEST_TOKEN --rotate --dry-run
+if [ "$gen_rc" -eq 0 ] && printf '%s' "$gen_out" | grep -qF 'record-update'; then
+  ok "--rotate dry-run emits record-update"
+else
+  fail "--rotate did not switch to record-update (rc=$gen_rc out: $gen_out)"
+fi
+
+# The generated secret must never be on keeper's argv — only the literal token.
+if printf '%s' "$gen_out" | grep -qF '$GEN'; then
+  ok "dry-run shows only the \$GEN template, no literal secret"
+else
+  fail "dry-run template missing \$GEN marker (out: $gen_out)"
+fi
+
+# Validation: bad NAME, non-numeric/too-small length, and missing NAME all fail
+# before any keeper call.
+run_gen lowercase_name --dry-run
+[ "$gen_rc" -ne 0 ] && ok "rejects non-UPPER_SNAKE NAME" || fail "accepted bad NAME"
+
+run_gen GEN_TEST_TOKEN --length abc --dry-run
+[ "$gen_rc" -ne 0 ] && ok "rejects non-numeric --length" || fail "accepted non-numeric length"
+
+run_gen GEN_TEST_TOKEN --length 4 --dry-run
+[ "$gen_rc" -ne 0 ] && ok "rejects --length below floor (8)" || fail "accepted too-small length"
+
+run_gen GEN_TEST_TOKEN --length 9999 --dry-run
+[ "$gen_rc" -ne 0 ] && ok "rejects --length above cap (200)" || fail "accepted over-cap length"
+
+run_gen --dry-run
+[ "$gen_rc" -ne 0 ] && ok "requires a NAME argument" || fail "ran without a NAME"
+
+# ---------------------------------------------------------------------------
 # Summary
 # ---------------------------------------------------------------------------
 echo ""
