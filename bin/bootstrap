@@ -30,7 +30,7 @@ bootstrap_macos() {
   brew update
 
   echo "Tapping third-party brew repos…"
-  for tap in vincentkoc/tap; do
+  for tap in vincentkoc/tap runpod/runpodctl; do
     if brew tap | grep -qx "$tap"; then
       echo "✓ tap $tap"
     else
@@ -39,7 +39,7 @@ bootstrap_macos() {
     fi
   done
 
-  for pkg in git neovim tmux fzf jq keepercommander gitleaks tokenjuice; do
+  for pkg in git neovim tmux fzf jq keepercommander gitleaks tokenjuice runpodctl; do
     if brew list "$pkg" >/dev/null 2>&1; then
       echo "✓ $pkg"
     else

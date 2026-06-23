@@ -46,8 +46,9 @@ _ensure_completion() {
   mkdir -p "${file:h}"
   $cmd "$@" >| $file
 }
-_ensure_completion kubectl "$HOME/.cache/zsh/completions/_kubectl" completion zsh
-_ensure_completion gh      "$HOME/.cache/zsh/completions/_gh"      completion -s zsh
+_ensure_completion kubectl   "$HOME/.cache/zsh/completions/_kubectl"   completion zsh
+_ensure_completion gh        "$HOME/.cache/zsh/completions/_gh"        completion -s zsh
+_ensure_completion runpodctl "$HOME/.cache/zsh/completions/_runpodctl" completion generate zsh
 
 fpath=("$HOME/.zsh/completions" "$HOME/.zsh/external-completions" "$HOME/.cache/zsh/completions" $fpath)
 autoload -U +X compinit && compinit
