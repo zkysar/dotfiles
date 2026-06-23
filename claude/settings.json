@@ -80,11 +80,12 @@
     }
   },
   "alwaysThinkingEnabled": true,
+  "skipWorkflowUsageWarning": true,
   "preferredNotifChannel": "iterm2",
   "voiceEnabled": true,
   "feedbackSurveyState": {
     "lastShownTime": 1755134822529
   },
   "defaultOutputStyle": "sr-software-developer",
-  "skipWorkflowUsageWarning": true
+  "agentPushNotifEnabled": true
 }
