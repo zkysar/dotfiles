@@ -26,6 +26,15 @@ export CRUSH_DISABLE_METRICS=1
 set -o vi
 export KEYTIMEOUT=1
 
+# zsh's default viins bindings use vi-backward-delete-char / vi-backward-kill-word,
+# which refuse to delete past the point where insert mode was last entered — so
+# Esc, move, then i/a leaves backspace dead. Use the emacs widgets in viins only;
+# normal-mode x/d/c are untouched. Must come after any other `set -o vi`/`bindkey -v`.
+bindkey -M viins '^?' backward-delete-char
+bindkey -M viins '^H' backward-delete-char
+bindkey -M viins '^W' backward-kill-word
+bindkey -M viins '^U' backward-kill-line
+
 # fzf — Homebrew (macOS) and apt (Debian/toolbox) integration paths
 if command -v fzf &>/dev/null; then
   for _fzf in \
