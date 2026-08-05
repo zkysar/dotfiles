@@ -22,6 +22,13 @@ Host zachnas
 	# still surfaces real problems (host-key changes, connection failures). The
 	# proper fix is an OpenSSH upgrade on DSM.
 	LogLevel ERROR
+	# Ghostty exports TERM=xterm-ghostty, but DSM's terminfo database has only
+	# xterm, xterm-color and xterm-256color — and ships no tic/infocmp, so the
+	# usual `infocmp -x | ssh host tic -x -` install isn't possible. With an
+	# unknown TERM, remote bash's readline loses its cursor-movement caps and
+	# backspace advances the cursor instead of erasing. Send a TERM the NAS
+	# actually has. SetEnv handles TERM specially (no remote AcceptEnv needed).
+	SetEnv TERM=xterm-256color
 	# Multiplex connections: every `ssh zachnas` reuses one shared master, so any
 	# connection while a master is alive is near-instant (no re-handshake). The
 	# master persists indefinitely (until closed / gone stale) so it's fast all
