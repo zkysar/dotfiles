@@ -1,0 +1,31 @@
+# Sourced by bash on the Synology NAS (DS420+), not by macOS.
+#
+# The NAS login shell is /bin/sh -> bash. DSM's /etc/profile sources
+# /etc.defaults/.bashrc_profile, which sets `alias ls='ls --color=auto'` and
+# ends with `source ~/.bashrc` — this file. That's the sanctioned extension
+# point: /etc/profile and /etc.defaults/ are DSM-owned and get rewritten by
+# DSM updates, but $HOME survives.
+#
+# Keep this POSIX-ish and dependency-free. It runs on a NAS with no git, no
+# zsh, and a minimal PATH.
+
+# --- Stop DSM shared folders rendering with a green background ---------------
+#
+# DSM creates shared folders world-writable (drwxrwxrwx+) and enforces access
+# via ACLs rather than POSIX mode bits. GNU ls only sees `o+w` and paints them
+# with its compiled-in "other-writable" colors:
+#
+#   ow = 34;42  other-writable, no sticky bit   -> blue on green
+#   tw = 30;42  other-writable + sticky bit     -> black on green
+#
+# So Backup, Photos, Media, "Google Drive" etc. all get highlighted while an
+# ordinary dir like ~/projects (drwxr-xr-x) stays plain blue. Nothing is
+# misconfigured — the signal is just noise here, since every share trips it.
+#
+# Repaint both as ordinary directories (01;34 — the `di` default).
+#
+# Only the indicators named here are overridden; every other file type keeps
+# its compiled-in default, so executables stay 01;32, symlinks 01;36, etc.
+# DSM leaves LS_COLORS empty, but prepend any existing value anyway so this
+# composes if something upstream ever sets it (later keys win in GNU ls).
+export LS_COLORS="${LS_COLORS:+$LS_COLORS:}ow=01;34:tw=01;34"

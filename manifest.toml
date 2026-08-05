@@ -5,6 +5,13 @@
 src  = "shell/zshrc"
 dest = "~/.zshrc"
 
+# Synology NAS only: its login shell is /bin/sh -> bash, and DSM's profile
+# sources ~/.bashrc. macOS uses zsh and never reads this.
+[[link]]
+src      = "shell/bashrc"
+platform = "linux"
+dest     = "~/.bashrc"
+
 [[link]]
 src  = "tmux/tmux.conf"
 dest = "~/.tmux.conf"
