@@ -37,6 +37,19 @@ nas() {
 }
 alias nas-update="ssh -t zachnas 'sudo /usr/local/bin/docker exec -u 1026:100 toolbox sh -lc \"git -C \$HOME/projects/dotfiles pull --ff-only && \$HOME/projects/dotfiles/bin/link\"'"
 
+# Hermes Agent CLI. Runs inside the `hermes` container -- NOT the toolbox one
+# that `nas` opens; Hermes has its own container and isn't on toolbox's PATH.
+# Execs the binary directly rather than via `sh -lc`, because a login shell
+# resets PATH and drops /opt/hermes/.venv/bin.
+#   hermes                       # interactive chat
+#   hermes skills list
+#   hermes chat -q "what's on my calendar this week?"
+hermes() {
+  ssh -t zachnas "sudo /usr/local/bin/docker exec -it -u 1026:100 hermes hermes ${(j: :)${(q)@}}"
+}
+# Tail the gateway log (no sudo needed -- data dir is zachkysar-owned).
+alias hermes-log="ssh zachnas 'tail -f /volume1/docker/hermes/data/logs/gateway.log'"
+
 # Environment
 export FAKE_LMSTUDIO_KEY=123
 export OLLAMA_MAX_LOADED_MODELS=2
