@@ -37,6 +37,32 @@ These apply to every Claude Code session on this machine.
 
 ---
 
+## Band todo list (Bnder)
+
+"My band's todo list", "band tasks", "the band board", and similar phrasings all
+mean the **Bnder** workspace **Chez straw** (Discord guild
+`1400172357775134870`), reached through the `bnder` MCP server. Bnder is a
+Discord-native task manager. Do not look in Todoist or the Obsidian vault for
+these.
+
+Gotchas that will otherwise cost a round trip:
+
+- Nearly every tool requires both `guildId` and `projectId`. Resolve the project
+  first via `get-projects` with the guild id above.
+- Task `status` is a numeric index into that project's kanban columns, not a
+  string. Read column names from `get-project` before setting a status.
+- `search-project-contents` searches tasks, events, and documents in one call.
+  Prefer it over listing each type separately.
+
+**Setup note.** Bnder's MCP server (`https://api.bnder.net/consumer/v1/mcp`) is
+undocumented and versioned `0.0.1`, so treat it as beta. Its OAuth discovery
+document wrongly advertises `scopes_supported: ["test"]`, which makes Claude
+Code's native OAuth fail. The connection therefore runs through `mcp-remote`
+with an explicit `--static-oauth-client-metadata '{"scope":"read write"}'`
+override, and credentials land in `~/.mcp-auth/` rather than the Keychain. If
+Bnder fixes their discovery document, drop the shim and use a plain
+`claude mcp add --transport http`.
+
 ## Implementation plans
 
 Save all implementation plans to `~/projects/plans/YYYY-MM-DD-<feature>.md`.
