@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+# Bnder exposes a remote HTTP MCP at https://api.bnder.net/consumer/v1/mcp.
+# Both Claude Code and Claude Desktop need stdio MCPs, so we bridge via mcp-remote.
+#
+# We authenticate with a static API key rather than OAuth. Bnder's MCP endpoint
+# returns 403 (not 401) when no Authorization header is present and omits the
+# WWW-Authenticate header entirely, so mcp-remote — which only starts its OAuth
+# flow on a 401 — treats the cold start as a fatal transport error and exits.
+# That surfaces in Claude Code as "Failed to reconnect to bnder: -32000".
+# Presenting a bearer token up front sidesteps the broken discovery path.
+#
+# Reads BNDER_API_KEY from macOS Keychain (synced there by bin/keys). The literal
+# string ${BNDER_API_KEY} is passed through to mcp-remote, which expands it from
+# its own environment, so the key never appears in argv or in `ps` output.
+set -euo pipefail
+
+BNDER_API_KEY=$(security find-generic-password -s BNDER_API_KEY -a "$USER" -w)
+export BNDER_API_KEY
+
+# Pin npm version — bumps must be intentional (wrapper runs with secrets in env).
+exec npx -y mcp-remote@0.1.38 https://api.bnder.net/consumer/v1/mcp \
+  --header 'Authorization: Bearer ${BNDER_API_KEY}'
