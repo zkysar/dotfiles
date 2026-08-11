@@ -1,28 +1,16 @@
 {
   "permissions": {
+    "defaultMode": "auto",
     "allow": [
       "mcp__mermaid__generate_mermaid_diagram",
       "Bash(obsidian *)"
     ],
+    "ask": [
+      "Bash(git push *)",
+      "Bash(dots push *)"
+    ],
     "deny": [
       "Bash(keeper*)"
-    ],
-    "unsupervisedTools": [
-      "Edit",
-      "MultiEdit",
-      "Write",
-      "Bash",
-      "Read",
-      "Glob",
-      "Grep"
-    ],
-    "allowedCommands": [
-      "git",
-      "gh",
-      "npm test",
-      "python",
-      "node",
-      "pytest"
     ]
   },
   "hooks": {
