@@ -1,122 +1,39 @@
 # Global Rules (Zach)
 
-These apply to every Claude Code session on this machine.
+hello, my name is zach! You are my personal assistant. I'm excited to be working with you. I have some simple instructions for how to interact with me in my various projects and interests.
 
-## Response style
+When responding to me, don't include long drawn out paragraphs. I know that future zach will only read short messages that are to the point. Very direct. Make it very clear when there is something that I have to read because often i will just be skimming through what your saying. TL;DR use communication style that optimize for clarity and efficiency.
 
-- Read existing files before writing. Don't re-read unless changed.
-- Thorough in reasoning, concise in output.
-- Skip files over 100KB unless required.
-- No sycophantic openers or closing fluff.
-- No emojis or em-dashes.
-- Do not guess APIs, versions, flags, commit SHAs, or package names. Verify by reading code or docs before asserting.
+I don't know many acronyms or slang that is specific to many of the areas that I work in. Often its better to be deliberate with words. If you're going to be using a acronym, the first time you use it add (meaning).
 
-## Obsidian vault
+When actions I need to take in UI. Use step by step instructions that clearly and visually walk me through where i need to interact. 
 
-**Vault path:** `~/projects/obsidian/vault/`
+Don't include em dashes, and only use emojis when it makes sense in the context. I find that emoji use by LLMs does the opposite of its intended effect making the LLM seem less human.
 
-**Access policy:**
-- Only access the vault when the user explicitly asks — never proactively
-- Do not surface journal or daily notes unprompted — these are private
-- Before any write or create operation, read `<vault>/claude.md` for conventions
+Use YAGNI agressively. I love to over engineer and implement things but I need you to keep me on track. That being said, you should weigh this practically with the effort involved. i.e. implementing a static html page vs one with html css and some javascript is the same level of difficulty for ME because I'll just be prompting an LLM.
 
-**Obsidian must be running** for the CLI to work (it launches automatically if not).
+Read existing files before writing. Don't re-read unless changed.
 
-| Operation | Command |
-|---|---|
-| Search vault | `obsidian search query="<term>"` |
-| Read a note | `obsidian read file="<path or title>"` |
-| Read today's daily note | `obsidian daily:read` |
-| Append to daily note | `obsidian daily:append content="<text>"` |
-| Create a note | `obsidian create name="<title>" content="<body>"` |
-| Append to a note | `obsidian append file="<title>" content="<text>"` |
-| List notes in folder | `obsidian list folder="<folder>"` |
-| Read note metadata | `obsidian read file="<title>" metadata` |
-| Get all tags | `obsidian tags` |
-| Full command reference | `obsidian help` |
+Thorough in reasoning, concise in output.
 
----
+Skip files over 100KB unless required.
 
-## Band todo list (Bnder)
+No sycophantic openers or closing fluff. 
 
-"My band's todo list", "band tasks", "the band board", and similar phrasings all
-mean the **Bnder** workspace **Chez straw** (Discord guild
-`1400172357775134870`), reached through the `bnder` MCP server. Bnder is a
-Discord-native task manager. Do not look in Todoist or the Obsidian vault for
-these.
+Do not guess APIs, versions, flags, commit SHAs, or package names. Verify by reading code or docs before asserting.
 
-Gotchas that will otherwise cost a round trip:
+## Domain conventions live in skills
 
-- Nearly every tool requires both `guildId` and `projectId`. Resolve the project
-  first via `get-projects` with the guild id above.
-- Task `status` is a numeric index into that project's kanban columns, not a
-  string. Read column names from `get-project` before setting a status.
-- `search-project-contents` searches tasks, events, and documents in one call.
-  Prefer it over listing each type separately.
-- **Deep links** (undocumented; recovered from the app's own link-copy code in
-  `https://bnder.net/app/main.dart.js`):
-  `https://bnder.net/app/task/{guildId}/{projectId}/{taskId}` and
-  `https://bnder.net/app/knowledge/{guildId}/{projectId}/{documentId}`.
-  `projectId` is the task's `board_id`, defaulting to `default`. The app is a
-  Flutter SPA that returns the same shell for *every* path under `/app/`, so a
-  200 proves nothing — never "verify" one of these with curl.
-- Assignees come back as bare Discord ids and **nothing in the API resolves them
-  to names**: there is no list-members endpoint, and
-  `GET /guilds/{guildId}/members/{memberId}` returns only `active_project_id`.
-  Chez straw: `166793917461692416` Zach, `392152472287838208` Kyle,
-  `363548832266584071` Wei, `194974359817814016` Evan, `176872756405731329` Matt.
-  Wei and Evan are confirmed by Zach; Kyle was inferred from an old task comment
-  and Matt was Zach's guess by elimination — treat those two as provisional.
-- There is no archive state. "Archive" means `update-task` with `in_bin: true`,
-  which stamps a `delete_at` 30 days out and then permanently purges.
-- Note Claude-made changes on the task itself via `add-comment-to-task` — every
-  write executes as Zach on a board shared with the band, so an unannotated
-  change is indistinguishable from one he made by hand.
+These areas have their own conventions. Load the skill before acting, don't
+improvise:
 
-**Setup note.** Bnder's MCP server (`https://api.bnder.net/consumer/v1/mcp`) is
-undocumented and versioned `0.0.1`, so treat it as beta. It runs through
-`claude/mcp-wrappers/bnder`, which pins three things that are all required:
-
-- **Callback port `3334`.** Bnder's "MCP" OAuth app registers exactly two
-  redirect URIs (`localhost:8080/callback`, `localhost:3334/oauth/callback`).
-  `mcp-remote` builds `http://localhost:<port>/oauth/callback` and otherwise
-  picks a *random* port, which never matches.
-- **Static client id** `oauth_0c140c8fd93722a2` (public, no secret) and
-  **static scope** `read write`, because the discovery document advertises
-  `scopes_supported: ["test"]`.
-- **mcp-remote 0.1.38.** Bnder has no API key feature; OAuth is the only way in.
-
-**The 403 cold-start trap.** Bnder returns **403 with no `WWW-Authenticate`**
-when no token is presented (an *invalid* token correctly returns 401).
-`mcp-remote` only begins its OAuth flow on a 401, so with an empty token cache
-it treats the 403 as fatal and exits — surfacing as
-`Failed to reconnect to bnder: -32000`. It can never log in on its own.
-
-To bootstrap (or recover if the refresh token dies), force a 401 by presenting a
-junk token, let the real login run, then move the cached token to the key the
-wrapper looks up:
-
-```bash
-npx -y mcp-remote@0.1.38 https://api.bnder.net/consumer/v1/mcp 3334 \
-  --static-oauth-client-info '{"client_id":"oauth_0c140c8fd93722a2"}' \
-  --static-oauth-client-metadata '{"scope":"read write"}' \
-  --header 'Authorization: Bearer bootstrap'
-# It logs in, then loops on 401 (the custom header overrides the real token) —
-# kill it as soon as the token file appears, then:
-cd ~/.mcp-auth/mcp-remote-0.1.37
-mv 0f9d3286c157f29d8d4f4734f86bfaec_tokens.json 7377299867445b3049db6e70498c2b00_tokens.json
-```
-
-Two gotchas in those paths. The cache key is
-`md5(serverUrl [+ "|" + JSON.stringify(headers)])`, so adding `--header`
-*changes which file is read* — hence the rename. And despite the package being
-`0.1.38`, tokens land in **`~/.mcp-auth/mcp-remote-0.1.37/`**: upstream never
-bumped its internal `version2` constant.
-
-Once a token is cached the wrapper always sends an `Authorization` header, so
-expiry yields a 401 and refresh proceeds normally. If Bnder fixes the
-403-should-be-401 bug and the discovery document, drop the wrapper for a plain
-`claude mcp add --transport http`.
+- **Band todo list / "band tasks" / "the band board"** → `bnder` skill. It's the
+  Bnder MCP, not Todoist and not the Obsidian vault.
+- **Obsidian vault** (`~/projects/obsidian/vault/`) → `obsidian-vault` skill.
+  Never access it unprompted, and never surface journal or daily notes.
+- **Adding or debugging an MCP server** → `mcp-server-config` skill. Registration
+  is required in two separate config files.
+- **Todoist** → `todoist` skill. Personal conventions change how the data reads.
 
 ## Implementation plans
 
@@ -137,29 +54,6 @@ they're easy to leave uncommitted. Before finishing, `cd ~/projects/plans/`,
 check `git status`, and commit there following that repo's conventions
 (`add <slug>: ...` or `update <slug>: ...`). Don't rely on the outer
 session's git checks to catch plan edits.
-
-## MCP server config
-
-MCPs must be registered in **two places**:
-
-1. **`~/.claude.json`** — read by Claude Code (CLI). Edit directly; not dotfiles-tracked.
-2. **`~/Library/Application Support/Claude/claude_desktop_config.json`** — read by Claude Desktop and by Claude Cowork. Cowork bridges Desktop's stdio MCPs into the Cowork VM via an SDK bridge, so any MCP you want available in Cowork must be in the Desktop config. Code-only MCPs (registered only in `~/.claude.json`) do not appear in Cowork.
-
-Wrapper scripts live in `claude/mcp-wrappers/` in this repo (version-controlled) and are symlinked to `~/.claude/mcp-wrappers/` via `manifest.toml` + `dots link`.
-
-- **Pin npm versions in every wrapper.** Wrappers run with Keychain secrets exported to their env, so a compromised upstream release has high blast radius. Use `npx -y <pkg>@<version>` (not unpinned `npx -y <pkg>`); bumps must be intentional and reviewed.
-
-**Paths in both config files must be absolute** — use `/Users/zachkysar/.claude/mcp-wrappers/<name>`, not `~`. Desktop does not reliably expand `~`.
-
-**Keep both configs in sync manually.** There is no automation — the convention is: if it's in `~/.claude.json`, it should also be in the Desktop config, and vice versa.
-
-To add a new MCP:
-1. Drop a wrapper script in `claude/mcp-wrappers/<name>` and commit.
-2. Add the `mcpServers.<name>` entry (with absolute path) to `~/.claude.json`.
-3. Add the same entry to `~/Library/Application Support/Claude/claude_desktop_config.json`.
-4. Quit and reopen Claude Desktop.
-
-Do NOT add `mcpServers` blocks to `~/.claude/settings.json` — Claude Code does not read MCP config from there; entries are silently ignored.
 
 ## Hooks
 
