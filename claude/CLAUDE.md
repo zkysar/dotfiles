@@ -53,6 +53,25 @@ Gotchas that will otherwise cost a round trip:
   string. Read column names from `get-project` before setting a status.
 - `search-project-contents` searches tasks, events, and documents in one call.
   Prefer it over listing each type separately.
+- **Deep links** (undocumented; recovered from the app's own link-copy code in
+  `https://bnder.net/app/main.dart.js`):
+  `https://bnder.net/app/task/{guildId}/{projectId}/{taskId}` and
+  `https://bnder.net/app/knowledge/{guildId}/{projectId}/{documentId}`.
+  `projectId` is the task's `board_id`, defaulting to `default`. The app is a
+  Flutter SPA that returns the same shell for *every* path under `/app/`, so a
+  200 proves nothing — never "verify" one of these with curl.
+- Assignees come back as bare Discord ids and **nothing in the API resolves them
+  to names**: there is no list-members endpoint, and
+  `GET /guilds/{guildId}/members/{memberId}` returns only `active_project_id`.
+  Chez straw: `166793917461692416` Zach, `392152472287838208` Kyle,
+  `363548832266584071` Wei, `194974359817814016` Evan, `176872756405731329` Matt.
+  Wei and Evan are confirmed by Zach; Kyle was inferred from an old task comment
+  and Matt was Zach's guess by elimination — treat those two as provisional.
+- There is no archive state. "Archive" means `update-task` with `in_bin: true`,
+  which stamps a `delete_at` 30 days out and then permanently purges.
+- Note Claude-made changes on the task itself via `add-comment-to-task` — every
+  write executes as Zach on a board shared with the band, so an unannotated
+  change is indistinguishable from one he made by hand.
 
 **Setup note.** Bnder's MCP server (`https://api.bnder.net/consumer/v1/mcp`) is
 undocumented and versioned `0.0.1`, so treat it as beta. It runs through
