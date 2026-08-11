@@ -22,6 +22,28 @@ No sycophantic openers or closing fluff.
 
 Do not guess APIs, versions, flags, commit SHAs, or package names. Verify by reading code or docs before asserting.
 
+## Clickable file references
+
+Whenever you name a file I might want to open, print it so a click opens it.
+Never make me copy a path out of the terminal.
+
+- **In prose or a summary:** `/abs/path/to/file.ext:1` (add the real line number
+  when you have one). This renders clickable in the Claude Code UI.
+- **When the point is "go look at this now":** also print the URL form on its own
+  line, `file:///abs/path/to/file.ext`. Ghostty linkifies it (`link-url = true`)
+  and it opens in the default handler for that type.
+
+Rules:
+
+- **Absolute paths only.** Neither form expands `~`, so `~/tmp/x.md` is dead text.
+- Applies everywhere, not just drafts: files you created, files you changed,
+  logs, reports, screenshots, build output.
+- **Print the link, don't open the file.** Launch an editor or app only when I
+  ask ("open it"). I'm often away from the terminal when you finish, so a link
+  waits for me and a window steals focus from whatever I'm actually doing.
+- Never launch an app from a subagent or a non-interactive run (`claude -p`,
+  hooks, launchd). Concurrent sessions are normal here.
+
 ## Domain conventions live in skills
 
 These areas have their own conventions. Load the skill before acting, don't
