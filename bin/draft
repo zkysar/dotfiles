@@ -1,0 +1,112 @@
+#!/usr/bin/env bash
+# Open a ~/tmp draft in nvim, reusing the existing draft window when one is live.
+#
+# Claude writes ~/tmp/draft-<slug>.md, then runs `draft <slug>`.
+# First call launches a dedicated Ghostty window running nvim with an RPC socket.
+# Later calls send the file to that same nvim instead of opening a second window.
+set -euo pipefail
+
+SOCK="${DRAFT_SOCK:-$HOME/.cache/nvim/draft.sock}"
+
+die() { echo "draft: $*" >&2; exit 1; }
+
+# Run a command with a wall-clock limit, returning 124 if it had to be killed.
+# Written out rather than using coreutils `timeout` so this has no dependency
+# beyond bash itself.
+with_timeout() {
+  local secs="$1"; shift
+  local marker rc=0 pid killer
+  marker="$(mktemp)"
+  "$@" & pid=$!
+  ( sleep "$secs"; kill -TERM "$pid" 2>/dev/null && printf 'x' > "$marker"; ) & killer=$!
+  wait "$pid" 2>/dev/null || rc=$?
+  kill "$killer" 2>/dev/null || true
+  wait "$killer" 2>/dev/null || true
+  [ -s "$marker" ] && rc=124
+  rm -f "$marker"
+  return "$rc"
+}
+
+# DOTS_PLATFORM override matches bin/dots and bin/link, and lets bin/test
+# exercise the refusal path on the Linux toolbox.
+case "${DOTS_PLATFORM:-$(uname -s)}" in
+  Darwin|macos) ;;
+  *) die "macOS only (needs Ghostty and open)" ;;
+esac
+
+slug="${1:-}"
+[ -n "$slug" ] || die "usage: draft <slug>   (opens ~/tmp/draft-<slug>.md)"
+
+# Taking a slug rather than a path is load-bearing: it makes tilde expansion,
+# spaces, and ../ escapes structurally impossible, since the path is built here.
+#
+# The allowed set is spelled out rather than written as [a-z0-9-]: under a UTF-8
+# locale, range expressions follow collation order and `[!a-z0-9-]` fails to
+# exclude uppercase. Enumerating has no locale surface at all.
+case "$slug" in
+  *[!abcdefghijklmnopqrstuvwxyz0123456789-]* | -* | "")
+    die "invalid slug '$slug' (lowercase letters, digits, hyphens; no leading hyphen)" ;;
+esac
+
+f="$HOME/tmp/draft-$slug.md"
+[ -f "$f" ] || die "no such draft: $f (write the file first)"
+# A 0-byte file opens as a blank window with no error, which reads as success.
+[ -s "$f" ] || die "draft is empty: $f"
+
+# macOS caps AF_UNIX paths near 104 bytes. Past that, nvim --server cannot form
+# the address and reports success against a socket that is not there, which
+# would silently swallow the draft. Refuse rather than guess.
+[ "${#SOCK}" -lt 100 ] || die "socket path too long (${#SOCK} bytes): $SOCK"
+
+mkdir -p "$(dirname "$SOCK")"
+
+# Ghostty's `-e` does not reliably consume the rest of argv: passing
+# `-e nvim --listen <sock> <file>` lets Ghostty claim `--listen` as one of its
+# own config keys, which drops it back to a default login shell and leaves the
+# remaining words typed at a zsh prompt. Writing a runner script means the only
+# thing after `-e` is a single undashed path, so there is nothing to misparse.
+launch() {
+  rm -f "$SOCK"
+  local runner="$HOME/.cache/nvim/draft-launch.sh"
+  {
+    printf '#!/bin/sh\n'
+    printf 'exec nvim --listen %q %q\n' "$SOCK" "$f"
+  } > "$runner"
+  chmod +x "$runner"
+  open -na Ghostty.app --args -e "$runner" || die "failed to launch Ghostty"
+  echo "opened new draft window: $f"
+}
+
+# The socket has three states, not two, and conflating them is what makes this
+# hang or duplicate windows:
+#
+#   absent  -> no window yet, launch one
+#   stale   -> nvim exited and left the socket file behind, so relaunch
+#   busy    -> the window exists but nvim is not answering RPC yet (lazy.nvim
+#              bootstraps plugins on first launch). Launching here would open a
+#              second window, which is the one thing this command exists to avoid.
+#
+# `--remote` is deliberately NOT used to probe: when it cannot reach a server it
+# falls back to editing the file locally and blocks forever. `--remote-expr`
+# fails fast instead, so it is the probe and `--remote` only runs after it passes.
+if [ ! -S "$SOCK" ]; then
+  launch
+else
+  probe_rc=0
+  with_timeout 3 nvim --server "$SOCK" --remote-expr '1' >/dev/null 2>&1 || probe_rc=$?
+
+  if [ "$probe_rc" -eq 0 ]; then
+    if with_timeout 5 nvim --server "$SOCK" --remote "$f" >/dev/null 2>&1; then
+      echo "reused existing draft window: $f"
+      echo "(switch to the nvim window to see it)"
+    else
+      die "draft window stopped responding; close it and re-run"
+    fi
+  elif [ "$probe_rc" -eq 124 ]; then
+    echo "draft window is busy (nvim may still be starting up)."
+    echo "the file is written and waiting at: $f"
+    echo "re-run 'draft $slug' in a moment to load it into that window."
+  else
+    launch
+  fi
+fi

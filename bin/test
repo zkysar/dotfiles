@@ -314,6 +314,68 @@ run_gen --dry-run
 [ "$gen_rc" -ne 0 ] && ok "requires a NAME argument" || fail "ran without a NAME"
 
 # ---------------------------------------------------------------------------
+# 11. draft — slug validation and refusal paths
+#     Every assertion below expects a NONZERO exit, so none of them ever reaches
+#     the `open` call. That keeps this suite safe on the Linux toolbox, where
+#     the script refuses outright, and headless on macOS, where it would
+#     otherwise spawn a window.
+# ---------------------------------------------------------------------------
+echo "11. draft (slug validation + refusals)"
+DRAFT="$REPO_ROOT/bin/draft"
+
+d_out=""; d_rc=0
+run_draft() { d_out="$(bash "$DRAFT" "$@" 2>&1)" && d_rc=0 || d_rc=$?; }
+
+run_draft
+[ "$d_rc" -ne 0 ] && ok "requires a slug argument" || fail "ran without a slug"
+
+DOTS_PLATFORM=linux run_draft some-slug
+[ "$d_rc" -ne 0 ] && ok "refuses off macOS" || fail "ran with DOTS_PLATFORM=linux"
+
+# Path traversal, tilde, and spaces must all die at the slug regex rather than
+# reaching the filesystem, since the script builds the path itself.
+for bad in "../../etc/passwd" "~/tmp/x" "has space" "UPPER" "-leading"; do
+  DOTS_PLATFORM=macos run_draft "$bad"
+  if [ "$d_rc" -ne 0 ] && printf '%s' "$d_out" | grep -qF 'invalid slug'; then
+    ok "rejects slug '$bad'"
+  else
+    fail "accepted slug '$bad' (rc=$d_rc out: $d_out)"
+  fi
+done
+
+DOTS_PLATFORM=macos run_draft "definitely-not-a-real-draft-$$"
+if [ "$d_rc" -ne 0 ] && printf '%s' "$d_out" | grep -qF 'no such draft'; then
+  ok "refuses a slug with no draft file"
+else
+  fail "accepted a missing draft (rc=$d_rc out: $d_out)"
+fi
+
+# A 0-byte draft opens as a blank window with no error, so it must be refused.
+d_empty="$HOME/tmp/draft-zz-bintest-empty-$$.md"
+mkdir -p "$HOME/tmp" && : > "$d_empty"
+DOTS_PLATFORM=macos run_draft "zz-bintest-empty-$$"
+if [ "$d_rc" -ne 0 ] && printf '%s' "$d_out" | grep -qF 'empty'; then
+  ok "refuses a 0-byte draft"
+else
+  fail "accepted an empty draft (rc=$d_rc out: $d_out)"
+fi
+rm -f "$d_empty"
+
+# An over-long socket path makes nvim --server report success against a socket
+# that is not there (macOS AF_UNIX caps near 104 bytes), which would silently
+# swallow the draft. It must refuse instead.
+d_long="$HOME/tmp/draft-zz-bintest-sock-$$.md"
+echo "content" > "$d_long"
+DOTS_PLATFORM=macos DRAFT_SOCK="/tmp/$(printf 'x%.0s' $(seq 1 120)).sock" \
+  run_draft "zz-bintest-sock-$$"
+if [ "$d_rc" -ne 0 ] && printf '%s' "$d_out" | grep -qF 'socket path too long'; then
+  ok "refuses an over-long socket path"
+else
+  fail "accepted over-long socket path (rc=$d_rc out: $d_out)"
+fi
+rm -f "$d_long"
+
+# ---------------------------------------------------------------------------
 # Summary
 # ---------------------------------------------------------------------------
 echo ""

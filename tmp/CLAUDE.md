@@ -17,6 +17,14 @@ Drop any file here that you want to keep short-term:
 
 No action needed — it expires automatically.
 
+## Drafts
+
+`draft-<slug>.md` files here are Claude drafts opened for hand-editing via the
+`draft` command (see the `draft-in-editor` skill). They are never rewritten in
+place: revisions land as `draft-<slug>-v2.md`, `-v3.md`, and so on, so an
+unsaved buffer can't be clobbered. Non-secret content only, since everything
+here is readable by any future Claude session until it expires.
+
 ## What is NOT deleted
 
 - Symlinks (this CLAUDE.md is a symlink from dotfiles)
