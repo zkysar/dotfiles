@@ -1,22 +1,27 @@
 #!/usr/bin/env bash
 # Bnder exposes a remote HTTP MCP at https://api.bnder.net/consumer/v1/mcp.
 # Both Claude Code and Claude Desktop need stdio MCPs, so we bridge via mcp-remote.
+# Bnder has no API key feature — OAuth is the only way in — and two of its quirks
+# have to be pinned here or the flow silently fails:
 #
-# We authenticate with a static API key rather than OAuth. Bnder's MCP endpoint
-# returns 403 (not 401) when no Authorization header is present and omits the
-# WWW-Authenticate header entirely, so mcp-remote — which only starts its OAuth
-# flow on a 401 — treats the cold start as a fatal transport error and exits.
-# That surfaces in Claude Code as "Failed to reconnect to bnder: -32000".
-# Presenting a bearer token up front sidesteps the broken discovery path.
+#   1. Callback port 3334. Bnder's "MCP" OAuth app registers exactly two redirect
+#      URIs: localhost:8080/callback and localhost:3334/oauth/callback. mcp-remote
+#      builds http://<host>:<port>/oauth/callback and otherwise picks a RANDOM
+#      port, which never matches. Pinning 3334 is what makes authorize succeed.
+#   2. Static client info. The discovery document advertises
+#      scopes_supported: ["test"], so negotiated registration produces a client
+#      that can't request read/write. Pass the pre-registered public client id
+#      (no secret — it's a public client) and the real scopes instead.
 #
-# Reads BNDER_API_KEY from macOS Keychain (synced there by bin/keys). The literal
-# string ${BNDER_API_KEY} is passed through to mcp-remote, which expands it from
-# its own environment, so the key never appears in argv or in `ps` output.
+# Cold-start caveat: bnder returns 403 (not 401) and omits WWW-Authenticate when
+# no token is presented, and mcp-remote only begins its OAuth flow on a 401. The
+# very first login therefore cannot happen through this wrapper; it is bootstrapped
+# once out of band (see the bnder section of claude/CLAUDE.md). Once tokens are
+# cached in ~/.mcp-auth/, mcp-remote always sends an Authorization header, so
+# expiry yields a 401 and refresh proceeds normally.
 set -euo pipefail
 
-BNDER_API_KEY=$(security find-generic-password -s BNDER_API_KEY -a "$USER" -w)
-export BNDER_API_KEY
-
-# Pin npm version — bumps must be intentional (wrapper runs with secrets in env).
-exec npx -y mcp-remote@0.1.38 https://api.bnder.net/consumer/v1/mcp \
-  --header 'Authorization: Bearer ${BNDER_API_KEY}'
+# Pin npm version — bumps must be intentional.
+exec npx -y mcp-remote@0.1.38 https://api.bnder.net/consumer/v1/mcp 3334 \
+  --static-oauth-client-info '{"client_id":"oauth_0c140c8fd93722a2"}' \
+  --static-oauth-client-metadata '{"scope":"read write"}'
