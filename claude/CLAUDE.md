@@ -55,13 +55,20 @@ Gotchas that will otherwise cost a round trip:
   Prefer it over listing each type separately.
 
 **Setup note.** Bnder's MCP server (`https://api.bnder.net/consumer/v1/mcp`) is
-undocumented and versioned `0.0.1`, so treat it as beta. Its OAuth discovery
-document wrongly advertises `scopes_supported: ["test"]`, which makes Claude
-Code's native OAuth fail. The connection therefore runs through `mcp-remote`
-with an explicit `--static-oauth-client-metadata '{"scope":"read write"}'`
-override, and credentials land in `~/.mcp-auth/` rather than the Keychain. If
-Bnder fixes their discovery document, drop the shim and use a plain
-`claude mcp add --transport http`.
+undocumented and versioned `0.0.1`, so treat it as beta. Its OAuth is broken in
+two ways: the discovery document wrongly advertises `scopes_supported: ["test"]`,
+and the MCP endpoint returns **403 with no `WWW-Authenticate` header** when no
+credentials are presented (an invalid token correctly returns 401). Since
+`mcp-remote` only starts its OAuth flow on a 401, a cold start dies with
+`Failed to reconnect to bnder: -32000` before it ever tries to authenticate.
+
+The connection therefore skips OAuth entirely: `claude/mcp-wrappers/bnder`
+presents a static `BNDER_API_KEY` from Keychain as a bearer token. The key is
+passed as the literal `${BNDER_API_KEY}` template, which `mcp-remote` expands
+from its own env, keeping it out of argv and `ps`.
+
+If Bnder fixes the 403-should-be-401 bug and the discovery document, drop the
+wrapper and use a plain `claude mcp add --transport http`.
 
 ## Implementation plans
 
