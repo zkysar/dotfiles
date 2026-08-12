@@ -44,15 +44,16 @@ You cannot know it yet, and generating first to measure defeats the purpose.
 
 ## The clickable handoff
 
-Print both forms. They are clickable in different places and cost one line each:
+Print the bare absolute path. Ghostty linkifies it and a click opens it in
+CotEditor, his default `.md` handler:
 
-> Drafted: `/Users/zachkysar/tmp/draft-<slug>.md:1`
-> `file:///Users/zachkysar/tmp/draft-<slug>.md`
+> Drafted: /Users/zachkysar/tmp/draft-<slug>.md
 > Edit and save, then tell me to read it back. Say "open it" for an nvim window.
 
-The `path:line` form is clickable in the Claude Code UI. The `file://` form is
-clickable in Ghostty (`link-url = true`) and opens in CotEditor, his default
-`.md` handler. Use absolute paths, not `~`, since neither form expands a tilde.
+**Never append `:1` or any `:line` suffix.** Ghostty's link regex treats `:` as
+part of the path, so it tries to open a file that does not exist and the click
+silently does nothing. `file:///Users/zachkysar/tmp/draft-<slug>.md` also works
+if a URL reads better in context. Absolute paths only.
 
 ## Only when he asks for the editor
 

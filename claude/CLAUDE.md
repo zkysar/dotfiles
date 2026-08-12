@@ -27,15 +27,20 @@ Do not guess APIs, versions, flags, commit SHAs, or package names. Verify by rea
 Whenever you name a file I might want to open, print it so a click opens it.
 Never make me copy a path out of the terminal.
 
-- **In prose or a summary:** `/abs/path/to/file.ext:1` (add the real line number
-  when you have one). This renders clickable in the Claude Code UI.
-- **When the point is "go look at this now":** also print the URL form on its own
-  line, `file:///abs/path/to/file.ext`. Ghostty linkifies it (`link-url = true`)
-  and it opens in the default handler for that type.
+Both of these are verified to work in Ghostty (`link-url = true`), opening the
+file in its default handler:
+
+- A bare absolute path: `/abs/path/to/file.ext`
+- A file URL: `file:///abs/path/to/file.ext`
 
 Rules:
 
-- **Absolute paths only.** Neither form expands `~`, so `~/tmp/x.md` is dead text.
+- **Never append `:line` to a path you want me to click.** Ghostty's link regex
+  includes `:` in the path character class, so it matches `file.ext:1` whole and
+  tries to open a path that doesn't exist. `:line` is a Claude Code convention
+  that breaks clicking here. When the line matters, keep it outside the path:
+  `/abs/path/to/file.ext` (line 42).
+- **Absolute paths only.** Don't rely on `~` expanding.
 - Applies everywhere, not just drafts: files you created, files you changed,
   logs, reports, screenshots, build output.
 - **Print the link, don't open the file.** Launch an editor or app only when I
