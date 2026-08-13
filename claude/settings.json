@@ -40,7 +40,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/opt/homebrew/bin/tokenjuice claude-code-post-tool-use",
+            "command": "~/.claude/hooks/tokenjuice-post-tool-use.sh",
             "statusMessage": "compacting bash output with tokenjuice"
           }
         ]
