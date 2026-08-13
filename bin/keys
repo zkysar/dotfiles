@@ -16,6 +16,50 @@ NAMES_FILE="$HOME/.dotfiles-keychain-names"
 ENV_FOLDER="env-vars"
 TITLE_REGEX='^[A-Z][A-Z0-9_]+$'
 
+# Both `add` and `gen` talk to Keeper before writing. These two helpers hold
+# the shared preflight so the two branches can't drift apart.
+
+require_keeper_tools() {
+  if ! command -v keeper >/dev/null 2>&1; then
+    echo "error: keepercommander not installed. Run dots bootstrap first." >&2
+    exit 1
+  fi
+  if ! command -v jq >/dev/null 2>&1; then
+    echo "error: jq not installed. Run dots bootstrap first." >&2
+    exit 1
+  fi
+}
+
+# Count records in ENV_FOLDER whose title is exactly $1, printed to stdout.
+# $2 is the command to suggest if Keeper's session has gone stale.
+#
+# Callers MUST propagate the status: `n=$(record_count ...) || exit $?`. The
+# `exit 2` below only leaves the command-substitution subshell, so without that
+# guard a stale session would read as a count of zero and silently create a
+# duplicate record.
+record_count() {
+  local title="$1" retry="$2" raw json
+  raw=$(keeper export --folder "$ENV_FOLDER" --format=json --force 2>&1) || true
+  # Strip anything before the first line starting with '[' or '{' — keeper may
+  # prefix auth prompts or diagnostics to stdout when the session expires.
+  json=$(printf '%s\n' "$raw" | awk '/^[[:space:]]*[\[{]/ {found=1} found {print}')
+  if [ -z "$json" ] || ! printf '%s' "$json" | jq empty >/dev/null 2>&1; then
+    cat >&2 <<EOF
+
+⚠ Could not parse Keeper output as JSON. Usually this means your Keeper session
+  needs to be refreshed. Run this in your terminal, then retry:
+
+      keeper login
+      $retry
+
+EOF
+    exit 2
+  fi
+  printf '%s' "$json" | jq -r --arg t "$title" '
+    [ (if type == "array" then . else (.records // []) end)[]
+      | select((.title // "") == $t) ] | length'
+}
+
 cmd="${1:-}"
 case "$cmd" in
   list)
@@ -109,29 +153,66 @@ EOF
     ;;
 
   add)
-    name="${2:-}"
+    # There is deliberately no --dry-run here: unlike `gen`, which prints a
+    # $GEN template, `add` holds the real secret, so echoing its keeper
+    # invocation would put that secret on the terminal.
+    shift
+    name="" value="" have_value=0 rotate=0
+    while [ "$#" -gt 0 ]; do
+      case "$1" in
+        --rotate) rotate=1 ;;
+        --*)      echo "error: unknown flag '$1'" >&2; exit 1 ;;
+        *)
+          if [ -z "$name" ]; then name="$1"
+          elif [ "$have_value" -eq 0 ]; then value="$1"; have_value=1
+          else echo "error: unexpected argument '$1'" >&2; exit 1; fi
+          ;;
+      esac
+      shift
+    done
+
     if [ -z "$name" ]; then
-      echo "usage: keys add <NAME> [VALUE]" >&2
+      echo "usage: keys add <NAME> [VALUE] [--rotate]" >&2
       echo "  VALUE omitted → prompt (recommended; argv leaks to history and ps)" >&2
+      echo "  --rotate      overwrite NAME if it already exists in Keeper" >&2
       exit 1
     fi
     if ! [[ "$name" =~ ^[A-Z][A-Z0-9_]+$ ]]; then
       echo "error: NAME must be UPPER_SNAKE_CASE (e.g. MY_API_TOKEN)" >&2
       exit 1
     fi
-    if [ "$#" -ge 3 ]; then
+
+    require_keeper_tools
+
+    # Look for an existing record BEFORE prompting. Checking afterwards would
+    # mean refusing the write only after you had already typed the secret.
+    exists=$(record_count "$name" "dots keys add $name") || exit $?
+    if [ "$exists" -gt 0 ] && [ "$rotate" -eq 0 ]; then
+      echo "error: '$name' already exists in Keeper folder '$ENV_FOLDER'." >&2
+      echo "  pass --rotate to overwrite it with a new value." >&2
+      exit 1
+    fi
+
+    if [ "$have_value" -eq 1 ]; then
       echo "⚠ passing VALUE on argv leaks the secret to shell history and 'ps'." >&2
       echo "  prefer 'dots keys add $name' to be prompted." >&2
-      value="$3"
     else
       read -rs -p "value: " value
       echo
-      if [ -z "$value" ]; then
-        echo "error: empty value" >&2
-        exit 1
-      fi
     fi
-    keeper record-add -t "$name" --folder "$ENV_FOLDER" -rt login "password=$value"
+    if [ -z "$value" ]; then
+      echo "error: empty value" >&2
+      exit 1
+    fi
+
+    # record-update -r accepts a title or UID; record-add creates a new record.
+    if [ "$exists" -gt 0 ]; then
+      keeper record-update -r "$name" "password=$value"
+      echo "↻ rotated $name"
+    else
+      keeper record-add -t "$name" --folder "$ENV_FOLDER" -rt login "password=$value"
+      echo "+ created $name"
+    fi
     "$0" sync
     ;;
 
@@ -207,34 +288,11 @@ EOF
       exit 0
     fi
 
-    if ! command -v keeper >/dev/null 2>&1; then
-      echo "error: keepercommander not installed. Run dots bootstrap first." >&2
-      exit 1
-    fi
-    if ! command -v jq >/dev/null 2>&1; then
-      echo "error: jq not installed. Run dots bootstrap first." >&2
-      exit 1
-    fi
+    require_keeper_tools
 
     # Detect an existing record with this title so we never silently create a
-    # duplicate. Same export-and-strip approach as `sync`.
-    raw=$(keeper export --folder "$ENV_FOLDER" --format=json --force 2>&1) || true
-    json=$(printf '%s\n' "$raw" | awk '/^[[:space:]]*[\[{]/ {found=1} found {print}')
-    if [ -z "$json" ] || ! printf '%s' "$json" | jq empty >/dev/null 2>&1; then
-      cat >&2 <<EOF
-
-⚠ Could not parse Keeper output as JSON. Usually this means your Keeper session
-  needs to be refreshed. Run this in your terminal, then retry:
-
-      keeper login
-      dots keys gen $name
-
-EOF
-      exit 2
-    fi
-    exists=$(printf '%s' "$json" | jq -r --arg t "$name" '
-      [ (if type == "array" then . else (.records // []) end)[]
-        | select((.title // "") == $t) ] | length')
+    # duplicate.
+    exists=$(record_count "$name" "dots keys gen $name") || exit $?
 
     if [ "$exists" -gt 0 ] && [ "$rotate" -eq 0 ]; then
       echo "error: '$name' already exists in Keeper folder '$ENV_FOLDER'." >&2
@@ -299,6 +357,7 @@ usage: keys <command>
 
   add NAME [VALUE]  create a Keeper record and sync it to Keychain
                     (omit VALUE to be prompted; argv leaks to history and ps)
+                      --rotate    overwrite NAME if it already exists
   gen NAME [opts]   generate a random password in Keeper and sync it; the value
                     is generated by Keeper and never displayed. Options:
                       --length N  password length (default 32, min 8)

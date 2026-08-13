@@ -98,6 +98,24 @@ This creates the Keeper record and syncs to Keychain in one step. Open a new ter
 
 Alternatively, create the Keeper record manually and run `dots keys sync`.
 
+### Rotating an existing secret
+
+`add` refuses to touch a name that already exists in Keeper, so a typo or a
+reused name can't silently clobber a live secret. To replace the value, pass
+`--rotate` — it updates the existing record in place instead of creating a
+second one with the same title:
+
+```bash
+dots keys add MY_SECRET_NAME --rotate
+```
+
+You'll be prompted for the new value, same as `add`. Same flag and same
+semantics as `dots keys gen --rotate`.
+
+**Why this matters:** sync mirrors Keeper records into Keychain *by title*. Two
+records sharing a title means whichever one sync happens to read first wins, and
+the other is reported as a skipped duplicate.
+
 ### Generating a secret you never see
 
 When you need a fresh *random* value (rather than one you already have), use

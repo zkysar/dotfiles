@@ -258,7 +258,7 @@ fi
 # 10. keys gen — arg parsing, validation, and the offline --dry-run template
 #     (--dry-run makes no keeper/jq call, so this is safe in CI on any OS)
 # ---------------------------------------------------------------------------
-echo "10. keys gen (dry-run + validation)"
+echo "10. keys gen/add (dry-run + validation)"
 KEYS="$REPO_ROOT/bin/keys"
 
 # Helper: run keys gen, capture stdout+stderr and the real exit code without
@@ -312,6 +312,47 @@ run_gen GEN_TEST_TOKEN --length 9999 --dry-run
 
 run_gen --dry-run
 [ "$gen_rc" -ne 0 ] && ok "requires a NAME argument" || fail "ran without a NAME"
+
+# --- keys add — arg parsing and validation -------------------------------
+# `add` has no --dry-run (it would print the real secret), so these assertions
+# instead run with an empty PATH: `command -v keeper` then fails deterministically
+# and every case exits at the tool check, before any network call or value
+# prompt. stdin is /dev/null so a stray prompt can never block.
+BASH_BIN="$(command -v bash)"
+add_out=""; add_rc=0
+run_add() {
+  add_out="$(PATH=/nonexistent "$BASH_BIN" "$KEYS" add "$@" </dev/null 2>&1)" \
+    && add_rc=0 || add_rc=$?
+}
+
+run_add
+[ "$add_rc" -ne 0 ] && ok "add requires a NAME argument" || fail "add ran without a NAME"
+
+run_add lowercase_name
+[ "$add_rc" -ne 0 ] && ok "add rejects non-UPPER_SNAKE NAME" || fail "add accepted bad NAME"
+
+run_add ADD_TEST_TOKEN --bogus
+if [ "$add_rc" -ne 0 ] && printf '%s' "$add_out" | grep -qF 'unknown flag'; then
+  ok "add rejects an unknown flag"
+else
+  fail "add did not reject --bogus (rc=$add_rc out: $add_out)"
+fi
+
+# --rotate must survive the parser and reach the keeper tool check — proving it
+# is a recognized flag, not swallowed as a positional or rejected as unknown.
+run_add ADD_TEST_TOKEN --rotate
+if [ "$add_rc" -ne 0 ] && printf '%s' "$add_out" | grep -qF 'keepercommander not installed'; then
+  ok "add accepts --rotate (reaches the keeper tool check)"
+else
+  fail "add mishandled --rotate (rc=$add_rc out: $add_out)"
+fi
+
+run_add ADD_TEST_TOKEN value1 value2
+if [ "$add_rc" -ne 0 ] && printf '%s' "$add_out" | grep -qF 'unexpected argument'; then
+  ok "add rejects a third positional"
+else
+  fail "add accepted extra argument (rc=$add_rc out: $add_out)"
+fi
 
 # ---------------------------------------------------------------------------
 # 11. draft — slug validation and refusal paths
