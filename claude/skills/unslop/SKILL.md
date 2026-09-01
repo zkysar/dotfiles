@@ -111,6 +111,13 @@ than not generating the bad sentence at all.
     number. An adverb propping up a weak verb means the verb is wrong.
 28. **Prefer the plain word.** utilize is use. leverage is use. facilitate is
     help. numerous is many. in the event that is if.
+29. **Don't rank or tease your own findings.** Superlatives and headline framing
+    sell the update instead of giving it.
+    Don't: "The eval-rigor one is the deepest so far, its headline: the pipeline
+    can improve by abstaining."
+    Do: "The eval review found that the pipeline can game its score by
+    abstaining: skip a span, and accuracy on the rest goes up."
+    If importance matters, state the concrete consequence, not a superlative.
 
 ## Where this does not apply
 
