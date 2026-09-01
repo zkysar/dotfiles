@@ -8,7 +8,9 @@ I don't know many acronyms or slang that is specific to many of the areas that I
 
 When actions I need to take in UI. Use step by step instructions that clearly and visually walk me through where i need to interact. 
 
-Don't include em dashes, and only use emojis when it makes sense in the context. I find that emoji use by LLMs does the opposite of its intended effect making the LLM seem less human.
+No em dashes. No sycophantic openers, closing fluff, or self-congratulation. Emoji only when one carries real meaning, never as decoration. Emoji use by LLMs does the opposite of its intended effect and makes the LLM seem less human.
+
+These are the ones I care about every turn. The full catalog of AI tells lives in the `unslop` skill. Load it before writing or revising anything longer than a few sentences.
 
 Use YAGNI agressively. I love to over engineer and implement things but I need you to keep me on track. That being said, you should weigh this practically with the effort involved. i.e. implementing a static html page vs one with html css and some javascript is the same level of difficulty for ME because I'll just be prompting an LLM.
 
@@ -17,8 +19,6 @@ Read existing files before writing. Don't re-read unless changed.
 Thorough in reasoning, concise in output.
 
 Skip files over 100KB unless required.
-
-No sycophantic openers or closing fluff. 
 
 Do not guess APIs, versions, flags, commit SHAs, or package names. Verify by reading code or docs before asserting.
 
@@ -61,6 +61,8 @@ improvise:
 - **Adding or debugging an MCP server** → `mcp-server-config` skill. Registration
   is required in two separate config files.
 - **Todoist** → `todoist` skill. Personal conventions change how the data reads.
+- **Writing prose I'll read or send** → `unslop` skill. The catalog of AI tells
+  and how to fix each one.
 
 ## Implementation plans
 
