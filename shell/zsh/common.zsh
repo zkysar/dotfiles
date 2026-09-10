@@ -35,6 +35,19 @@ bindkey -M viins '^H' backward-delete-char
 bindkey -M viins '^W' backward-kill-word
 bindkey -M viins '^U' backward-kill-line
 
+# @d — inline date abbreviation. Typing `@d` at the start of a word and then any
+# key (or Enter) replaces it with today's YYYY-MM-DD, so `mkdir @d-zine-cover`
+# becomes `mkdir 2026-09-10-zine-cover` right in the buffer. A global alias can't
+# do this: zsh only expands aliases that match a whole word. Word-start only, so
+# `me@domain.com` is left alone.
+_expand_date_abbrev() {
+  [[ $LBUFFER == (|*[[:space:]/=])@d ]] && LBUFFER="${LBUFFER%@d}$(date +%F)"
+}
+_date_abbrev_self_insert() { _expand_date_abbrev; zle .self-insert; }
+_date_abbrev_accept_line() { _expand_date_abbrev; zle .accept-line; }
+zle -N self-insert _date_abbrev_self_insert
+zle -N accept-line _date_abbrev_accept_line
+
 # fzf — Homebrew (macOS) and apt (Debian/toolbox) integration paths
 if command -v fzf &>/dev/null; then
   for _fzf in \
