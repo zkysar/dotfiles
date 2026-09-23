@@ -1,17 +1,17 @@
 {
   "permissions": {
-    "defaultMode": "auto",
     "allow": [
       "mcp__mermaid__generate_mermaid_diagram",
       "Bash(obsidian *)"
+    ],
+    "deny": [
+      "Bash(keeper*)"
     ],
     "ask": [
       "Bash(git push *)",
       "Bash(dots push *)"
     ],
-    "deny": [
-      "Bash(keeper*)"
-    ]
+    "defaultMode": "auto"
   },
   "hooks": {
     "UserPromptSubmit": [
@@ -68,12 +68,14 @@
     }
   },
   "alwaysThinkingEnabled": true,
+  "tui": "fullscreen",
   "skipWorkflowUsageWarning": true,
   "preferredNotifChannel": "iterm2",
+  "agentPushNotifEnabled": true,
   "voiceEnabled": true,
   "feedbackSurveyState": {
     "lastShownTime": 1755134822529
   },
   "defaultOutputStyle": "sr-software-developer",
-  "agentPushNotifEnabled": true
+  "model": "fable"
 }

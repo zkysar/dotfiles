@@ -18,9 +18,16 @@ patterns* (Claude observed across sessions), use the memory system at
 
 ## Fitness
 
-- Cardio 2x/week, gym 3x/week
-- Mon cardio = run; Fri cardio = bike (default 2hr)
-- Chest workout goes on PT day only when PT falls on a regular gym day (Tue–Thu). If PT is Mon or Fri, skip chest that week — gym is strictly Tue/Wed/Thu.
+- **In flux as of Sept 2026** — Zach is still figuring out the new plan.
+  Current shape: gym has lapsed; strength comes from ClassPass classes
+  (strength, Pilates, yoga), cardio 2x/week continues (partner rides/runs
+  with Pranav, Joshua, or Brian, plus solo run/bike, swimming).
+- Aditi's yoga classes are free for Zach to attend, any of them
+  (public calendar: communityflowsf@gmail.com; Sunday class is the staple).
+- Older pattern, applies only if the gym comes back:
+  - Cardio 2x/week, gym 3x/week
+  - Mon cardio = run; Fri cardio = bike (default 2hr)
+  - Chest workout goes on PT day only when PT falls on a regular gym day (Tue–Thu). If PT is Mon or Fri, skip chest that week — gym is strictly Tue/Wed/Thu.
 - Cook 2 meals/week, groceries 1x/week (~1hr 15, morning preferred)
 - Cooking blocks default to 2 hours
 - Meals to schedule: breakfast + lunch only (skip dinner)
