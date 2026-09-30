@@ -49,6 +49,13 @@ Two gotchas in those paths. The cache key is
 `0.1.38`, tokens land in **`~/.mcp-auth/mcp-remote-0.1.37/`**: upstream never
 bumped its internal `version2` constant.
 
+Before re-bootstrapping, delete any stale
+`7377299867445b3049db6e70498c2b00_lock.json` / `_code_verifier.txt` left by a
+dead auth attempt (check the `pid` in the lock). Symptom of a dead cache: the
+wrapper fails immediately with `403 Forbidden resource` and the directory holds
+no `7377…_tokens.json`. The other `*_tokens.json` files there belong to other
+servers; leave them alone. (Recovered this way 2026-09-30.)
+
 Once a token is cached the wrapper always sends an `Authorization` header, so
 expiry yields a 401 and refresh proceeds normally. If Bnder fixes the
 403-should-be-401 bug and the discovery document, drop the wrapper for a plain
