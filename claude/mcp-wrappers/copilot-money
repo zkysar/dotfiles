@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# Copilot Money (expense tracker) via the community copilot-money-mcp server.
+# Default mode reads the Mac App Store app's local Firestore cache offline.
+# --write enables live GraphQL reads AND 19 mutation tools (transactions, tags,
+# categories, budgets, recurrings, splits). Live/write auth comes from the
+# Firebase refresh token of a browser session logged in to app.copilot.money;
+# nothing is read from Keychain. Writes have no confirmation step inside the
+# server, so the assistant must confirm with Zach before any mutation.
+# Official Copilot MCP is waitlist-only (agent.copilot.money/#mcp) and skips
+# Plaid accounts; swap to it when access arrives.
+set -euo pipefail
+
+# Pin npm version — bumps must be intentional.
+exec npx -y copilot-money-mcp@2.3.0 --write
