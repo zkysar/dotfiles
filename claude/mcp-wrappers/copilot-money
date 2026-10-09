@@ -10,5 +10,10 @@
 # Plaid accounts; swap to it when access arrives.
 set -euo pipefail
 
+# npm 2.3.0 leaks a ~60MB LevelDB temp copy per read when the process exits
+# before its deferred cleanup (upstream #631, fixed on main but unreleased).
+# Sweep stale copies on every start so they can't pile up.
+find "${TMPDIR:-/tmp}" -maxdepth 1 -name 'copilot-leveldb-*' -mmin +10 -exec rm -rf {} + 2>/dev/null || true
+
 # Pin npm version — bumps must be intentional.
 exec npx -y copilot-money-mcp@2.3.0 --write
