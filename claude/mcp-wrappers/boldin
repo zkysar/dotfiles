@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# Boldin (financial planner, PlannerPlus required) exposes a remote HTTP MCP at
+# https://www.boldin.com/mcp with OAuth browser sign-in. Claude Code talks to it
+# natively (`claude mcp add --transport http boldin https://www.boldin.com/mcp`),
+# but Claude Desktop / Cowork need a stdio MCP, so this wrapper bridges via
+# mcp-remote. Tokens are cached in ~/.mcp-auth/ after the first browser login.
+# No secrets: OAuth only, nothing read from Keychain.
+set -euo pipefail
+
+# Pin npm version — bumps must be intentional.
+exec npx -y mcp-remote@0.1.38 https://www.boldin.com/mcp
