@@ -30,6 +30,28 @@ require_keeper_tools() {
   fi
 }
 
+# Make sure Keeper's session is alive BEFORE any call whose output we capture.
+#
+# Why: `record_count` and `sync` run `keeper export` inside $(...) with 2>&1.
+# When the session has expired, Keeper prompts for login / 2FA on stdout —
+# which that capture swallows. The user sees a blank line that looks hung, and
+# anything they type is fed to Keeper as a bad 2FA code. Running a cheap
+# command here with stdout/stderr left on the terminal makes those prompts
+# visible and interactive; once it succeeds, the captured calls won't prompt.
+require_keeper_session() {
+  echo "→ checking Keeper session (log in if prompted)…" >&2
+  if ! keeper whoami; then
+    cat >&2 <<EOF
+
+error: Keeper session check failed. Run this in your terminal, then retry:
+
+      keeper login
+
+EOF
+    exit 2
+  fi
+}
+
 # Count records in ENV_FOLDER whose title is exactly $1, printed to stdout.
 # $2 is the command to suggest if Keeper's session has gone stale.
 #
@@ -86,6 +108,8 @@ case "$cmd" in
       echo "error: jq not installed. Run dots bootstrap first." >&2
       exit 1
     fi
+
+    require_keeper_session
 
     # Single keeper call: export the ENV_FOLDER folder as JSON to stdout
     # (omitting the positional filename = console output).
@@ -183,6 +207,7 @@ EOF
     fi
 
     require_keeper_tools
+    require_keeper_session
 
     # Look for an existing record BEFORE prompting. Checking afterwards would
     # mean refusing the write only after you had already typed the secret.
@@ -289,6 +314,7 @@ EOF
     fi
 
     require_keeper_tools
+    require_keeper_session
 
     # Detect an existing record with this title so we never silently create a
     # duplicate.

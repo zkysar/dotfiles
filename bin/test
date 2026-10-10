@@ -354,6 +354,59 @@ else
   fail "add accepted extra argument (rc=$add_rc out: $add_out)"
 fi
 
+# --- keys add/gen/sync — Keeper session preflight must be visible ----------
+# Regression: with an expired Keeper session, the captured `keeper export`
+# inside $(...) swallowed Keeper's "Enter 2FA Code:" prompt, so the command
+# looked hung and keystrokes went to Keeper as bad codes. Each subcommand must
+# run an uncaptured `keeper whoami` FIRST and stop if it fails, never reaching
+# the captured export. A fake keeper on PATH records which subcommands ran.
+FAKE_BIN="$(mktemp -d)"
+FAKE_LOG="$FAKE_BIN/calls.log"
+cat > "$FAKE_BIN/keeper" <<EOF
+#!/usr/bin/env bash
+echo "\$1" >> "$FAKE_LOG"
+case "\$1" in
+  whoami) [ "\${FAKE_KEEPER_SESSION:-}" = ok ] && exit 0; echo "Enter 2FA Code:"; exit 1 ;;
+  export) echo '[]' ;;
+esac
+EOF
+chmod +x "$FAKE_BIN/keeper"
+fake_calls() { tr '\n' ' ' < "$FAKE_LOG" 2>/dev/null | sed 's/ $//'; }
+run_fake() {  # $1=session state, rest = keys args
+  local state="$1"; shift
+  : > "$FAKE_LOG"
+  add_out="$(FAKE_KEEPER_SESSION="$state" PATH="$FAKE_BIN:$PATH" \
+    "$BASH_BIN" "$KEYS" "$@" <<< "" 2>&1)" && add_rc=0 || add_rc=$?
+}
+# stdin is a single blank line (not /dev/null): the value prompt then reads an
+# empty string and hits the "empty value" check, instead of EOF tripping set -e.
+
+if command -v jq >/dev/null 2>&1; then
+  for sub in add gen sync; do
+    case "$sub" in sync) args=() ;; *) args=(PREFLIGHT_TEST_TOKEN) ;; esac
+    run_fake dead "$sub" ${args[@]+"${args[@]}"}
+    if [ "$add_rc" -ne 0 ] && [ "$(fake_calls)" = "whoami" ]; then
+      ok "$sub stops at the whoami preflight when the session is dead"
+    else
+      fail "$sub with dead session: rc=$add_rc calls='$(fake_calls)' out: $add_out"
+    fi
+  done
+
+  # Live session: preflight passes, export runs, and add reaches the value
+  # prompt (stdin is /dev/null, so it fails on the empty value — proving the
+  # prompt was reached rather than swallowed).
+  run_fake ok add PREFLIGHT_TEST_TOKEN
+  if [ "$add_rc" -ne 0 ] && [ "$(fake_calls)" = "whoami export" ] \
+     && printf '%s' "$add_out" | grep -qF 'empty value'; then
+    ok "add with live session runs whoami, then export, then prompts"
+  else
+    fail "add with live session: rc=$add_rc calls='$(fake_calls)' out: $add_out"
+  fi
+else
+  echo "  (skip) jq not installed; keeper preflight cases need it"
+fi
+rm -rf "$FAKE_BIN"
+
 # ---------------------------------------------------------------------------
 # 11. draft — slug validation and refusal paths
 #     Every assertion below expects a NONZERO exit, so none of them ever reaches
