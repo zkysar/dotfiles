@@ -13,6 +13,7 @@
     ],
     "defaultMode": "auto"
   },
+  "model": "fable",
   "hooks": {
     "UserPromptSubmit": [
       {
@@ -57,13 +58,20 @@
     "superpowers@claude-plugins-official": true,
     "claude-md-management@claude-plugins-official": true,
     "skill-creator@claude-plugins-official": true,
-    "claude-mem@thedotmack": true
+    "claude-mem@thedotmack": true,
+    "typesafe@typesafe-ai": true
   },
   "extraKnownMarketplaces": {
     "thedotmack": {
       "source": {
         "source": "github",
         "repo": "thedotmack/claude-mem"
+      }
+    },
+    "typesafe-ai": {
+      "source": {
+        "source": "github",
+        "repo": "typesafe-ai/skills"
       }
     }
   },
@@ -76,6 +84,5 @@
   "feedbackSurveyState": {
     "lastShownTime": 1755134822529
   },
-  "defaultOutputStyle": "sr-software-developer",
-  "model": "fable"
+  "defaultOutputStyle": "sr-software-developer"
 }
