@@ -15,5 +15,10 @@ set -euo pipefail
 # Sweep stale copies on every start so they can't pile up.
 find "${TMPDIR:-/tmp}" -maxdepth 1 -name 'copilot-leveldb-*' -mmin +10 -exec rm -rf {} + 2>/dev/null || true
 
+# The server reads the Copilot app's sandbox and browser storage at startup,
+# which triggers a macOS "access data from other apps" prompt on every Claude
+# launch. lazy-mcp.mjs answers startup from a cache and only starts the real
+# server on the first tool call, so the prompt waits until Copilot is used.
 # Pin npm version — bumps must be intentional.
-exec npx -y copilot-money-mcp@2.3.0 --write
+exec node "$(dirname "$0")/lazy-mcp.mjs" --name copilot-money -- \
+  npx -y copilot-money-mcp@2.3.0 --write
