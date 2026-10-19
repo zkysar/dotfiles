@@ -76,11 +76,13 @@ fpath=("$HOME/.zsh/completions" "$HOME/.zsh/external-completions" "$HOME/.cache/
 autoload -U +X compinit && compinit
 autoload -U +X bashcompinit && bashcompinit
 
-# zoxide — `z <part of path>` jumps to a frecent dir, `zi` picks with fzf.
-# Must come after compinit.
-command -v zoxide >/dev/null && eval "$(zoxide init zsh)"
+# zoxide replaces `cd`: real paths behave as usual, otherwise `cd <part of path>`
+# jumps to a frecent dir; `cdi` picks with fzf. _ZO_ECHO prints where a fuzzy
+# jump landed so a typo can't silently drop you somewhere. Must come after compinit.
+export _ZO_ECHO=1
+command -v zoxide >/dev/null && eval "$(zoxide init zsh --cmd cd)"
 
-# Keep every ~/projects/* dir in zoxide so `z` finds a project before you've
+# Keep every ~/projects/* dir in zoxide so `cd` finds a project before you've
 # visited it. Only adds missing ones: `zoxide add` on a known dir bumps its rank.
 _zoxide_seed_projects() {
   local -a known=("${(@f)$(zoxide query -la --base-dir $HOME/projects)}")
