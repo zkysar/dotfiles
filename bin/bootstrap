@@ -39,7 +39,7 @@ bootstrap_macos() {
     fi
   done
 
-  for pkg in git neovim tmux fzf jq keepercommander gitleaks tokenjuice runpodctl; do
+  for pkg in git neovim tmux fzf zoxide jq keepercommander gitleaks tokenjuice runpodctl; do
     if brew list "$pkg" >/dev/null 2>&1; then
       echo "✓ $pkg"
     else
@@ -196,7 +196,7 @@ install_gh() {
 bootstrap_linux() {
   command -v apt-get >/dev/null 2>&1 || {
     echo "error: Linux bootstrap currently supports apt-based distros only." >&2
-    echo "       On other distros install git git-lfs neovim tmux fzf jq zsh," >&2
+    echo "       On other distros install git git-lfs neovim tmux fzf zoxide jq zsh," >&2
     echo "       plus gitleaks and gh, via your package manager, then run" >&2
     echo "       bin/dots link." >&2
     exit 1
@@ -204,7 +204,7 @@ bootstrap_linux() {
 
   echo "Installing apt packages (sudo)…"
   sudo apt-get update
-  sudo apt-get install -y git git-lfs neovim tmux fzf jq zsh
+  sudo apt-get install -y git git-lfs neovim tmux fzf zoxide jq zsh
 
   echo ""
   install_gitleaks

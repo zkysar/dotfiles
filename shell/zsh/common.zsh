@@ -76,6 +76,10 @@ fpath=("$HOME/.zsh/completions" "$HOME/.zsh/external-completions" "$HOME/.cache/
 autoload -U +X compinit && compinit
 autoload -U +X bashcompinit && bashcompinit
 
+# zoxide — `z <part of path>` jumps to a frecent dir, `zi` picks with fzf.
+# Must come after compinit.
+command -v zoxide >/dev/null && eval "$(zoxide init zsh)"
+
 # Prompt. An optional location tag is prepended when $TOOLBOX_HOST is set
 # (the NAS toolbox container sets TOOLBOX_HOST=nas); on the Mac it's unset, so
 # the prompt is unchanged.
