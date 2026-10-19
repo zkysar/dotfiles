@@ -80,6 +80,16 @@ autoload -U +X bashcompinit && bashcompinit
 # Must come after compinit.
 command -v zoxide >/dev/null && eval "$(zoxide init zsh)"
 
+# Keep every ~/projects/* dir in zoxide so `z` finds a project before you've
+# visited it. Only adds missing ones: `zoxide add` on a known dir bumps its rank.
+_zoxide_seed_projects() {
+  local -a known=("${(@f)$(zoxide query -la --base-dir $HOME/projects)}")
+  local -a dirs=($HOME/projects/*(N/))
+  local -a missing=(${dirs:|known})
+  (( $#missing )) && zoxide add $missing
+}
+command -v zoxide >/dev/null && zsh-defer _zoxide_seed_projects
+
 # Prompt. An optional location tag is prepended when $TOOLBOX_HOST is set
 # (the NAS toolbox container sets TOOLBOX_HOST=nas); on the Mac it's unset, so
 # the prompt is unchanged.
