@@ -102,6 +102,13 @@ worktrees and concurrent Claude sessions are common on this machine, and fixed
 default ports collide. If a tool requires a fixed port, pick one explicitly and
 tell the user before starting it.
 
+## Installing third-party tools
+
+Never install, clone-and-run, or register (MCP servers, plugins, packages,
+Homebrew taps, CLIs) a GitHub project with **fewer than 1,000 stars**. Check
+the star count before recommending one, and show it next to every option. If
+nothing clears the bar, say so and stop. Don't install it anyway.
+
 ## Dotfiles
 
 Dotfiles repo: `~/projects/dotfiles/`. Many paths under `$HOME` (shell, tmux,
