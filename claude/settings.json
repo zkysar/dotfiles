@@ -84,5 +84,38 @@
   "feedbackSurveyState": {
     "lastShownTime": 1755134822529
   },
-  "defaultOutputStyle": "sr-software-developer"
+  "defaultOutputStyle": "sr-software-developer",
+  "autoMode": {
+    "environment": [
+      "### Org-wide",
+      "**Organization**: None configured",
+      "**Cloud provider(s)**: None configured",
+      "**Repository visibility**: PUBLIC — github.com:zkysar/dotfiles.git (origin). No secrets committed by policy; treat anything pushed here as published.",
+      "**Internal sharing / snippet hosting**: None configured — treat public paste/gist services as outside the trust boundary",
+      "**Secrets management**: Keeper (source of truth) synced one-way to macOS Keychain, exported as env vars by zshrc. Claude is denied from invoking `keeper` directly; secret creation/rotation must be done by the user via `dots keys add|gen` in their own terminal, never via argv in a Claude-run command.",
+      "**Default / protected branches**: main (default). Rulesets: none listed. Protected branches: none listed (gh-verified; repo is public and small, treat as unprotected).",
+      "**CI/CD deploy targets**: None configured",
+      "**Network posture**: None configured",
+      "**Host containment**: None configured — assume Claude Code runs on an ordinary developer machine (macOS/Linux/WSL) with open internet",
+      "**Source control**: The trusted repo (zkysar/dotfiles) and its origin remote only, as scoped by Repository visibility above (public — only this repo's own work belongs here)",
+      "**Trusted internal domains**: None configured",
+      "**Trusted cloud buckets**: None configured",
+      "**Key internal services**: api.bnder.net (used in this project's recent sessions), api.todoist.com (used in this project's recent sessions)",
+      "**Internal package registry**: None configured",
+      "**Sensitive data locations & audiences**: claude/hooks/.env (gitignored, template-or-deletion enforced), claude/settings.local.json (gitignored); OAuth/refresh tokens and API keys must stay outside the tracked symlinked tree (e.g. ~/.config/<tool>/); Keeper records are the source of truth for secret values — never write a secret value into any file in this repo",
+      "**Data retention / declassification**: None configured",
+      "**Sensitive remote targets**: any namespace, host, or container whose name carries `prod` or `production` as a whole word or name segment",
+      "**Protected deployment namespaces / environments**: None configured — fall back to the Sensitive remote targets heuristic",
+      "**Protected IaC scopes**: IAM, RBAC, networking, quota, and node-pool resources; anything whose name or tag carries `prod` or `production` as a whole word or name segment",
+      "### User-specific",
+      "**Primary use of Claude Code**: software development (personal dotfiles management — shell, tmux, neovim, git, Claude Code config)",
+      "**Trusted repo**: /Users/zachkysar/projects/dotfiles (zkysar/dotfiles, public) — routine edits, `dots link`/`doctor`/`test`/`push` under this repo are expected; always `dots push` (or `git push`) immediately after committing per repo convention",
+      "**Org-specific CLIs**: dots (repo's own bootstrap/link/doctor/keys/push CLI), gitleaks (secrets scan, pre-commit), readlink -f (for checking dotfiles symlinks before editing $HOME configs)",
+      "**routine under ~/projects/dotfiles/ prefix**: shell/tmux/nvim/git/claude config edits, manifest.toml changes, bin/ script changes with corresponding bin/test coverage, launchd plist additions"
+    ],
+    "soft_deny": [
+      "$defaults",
+      "Bash(keeper:*) — Claude is explicitly denied from invoking keeper directly per CLAUDE.md; secret add/gen/rotate must be run by the user in their own terminal"
+    ]
+  }
 }
