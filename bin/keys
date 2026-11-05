@@ -230,9 +230,11 @@ EOF
       exit 1
     fi
 
-    # record-update -r accepts a title or UID; record-add creates a new record.
+    # record-update -r takes a UID or a path resolved from the vault root
+    # (keepercommander base.py resolve_single_record -> try_resolve_path), so a
+    # bare title misses records inside $ENV_FOLDER. record-add creates a new one.
     if [ "$exists" -gt 0 ]; then
-      keeper record-update -r "$name" "password=$value"
+      keeper record-update -r "$ENV_FOLDER/$name" "password=$value"
       echo "↻ rotated $name"
     else
       keeper record-add -t "$name" --folder "$ENV_FOLDER" -rt login "password=$value"
@@ -305,7 +307,7 @@ EOF
       # needs quoting; single-quote the password arg so the $GEN token is shown
       # exactly as it must be typed (literal, unexpanded by the shell).
       if [ "$rotate" -eq 1 ]; then
-        printf "keeper record-update -r %s 'password=%s'\n" "$name" "$gen_token"
+        printf "keeper record-update -r %s/%s 'password=%s'\n" "$ENV_FOLDER" "$name" "$gen_token"
       else
         printf "keeper record-add -t %s --folder %s -rt login 'password=%s'\n" \
           "$name" "$ENV_FOLDER" "$gen_token"
@@ -326,9 +328,9 @@ EOF
       exit 1
     fi
 
-    # record-update -r accepts a title or UID; record-add creates a new record.
+    # record-update -r needs the folder path (see add); record-add creates a new record.
     if [ "$exists" -gt 0 ]; then
-      keeper record-update -r "$name" "password=$gen_token"
+      keeper record-update -r "$ENV_FOLDER/$name" "password=$gen_token"
       echo "↻ rotated $name"
     else
       keeper record-add -t "$name" --folder "$ENV_FOLDER" -rt login "password=$gen_token"
