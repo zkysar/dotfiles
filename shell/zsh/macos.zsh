@@ -57,6 +57,8 @@ export CLAUDE_MEM_MODEL=claude-haiku-4-5
 export RCLONE_CONFIG_B2_TYPE=b2
 export RCLONE_CONFIG_GDRIVE_TYPE=drive
 export RCLONE_CONFIG_GDRIVE_SCOPE=drive.readonly
+# Immich on the NAS, via Tailscale MagicDNS short name (works on and off LAN).
+export IMMICH_URL=http://zachnas:2283
 
 # Secrets — macOS Keychain (populated by `dots keys sync`)
 _load_keychain_secrets() {
