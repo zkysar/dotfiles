@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# Excalidraw+ (paid workspace) exposes a remote HTTP MCP at
+# https://api.excalidraw.com/api/v1/mcp, authenticated with an API key created
+# in Excalidraw+ workspace settings (docs: plus.excalidraw.com/docs/mcp).
+# Claude Desktop / Cowork need a stdio MCP, so this bridges via mcp-remote.
+#
+# Reads EXCALIDRAW_API_KEY from macOS Keychain (synced there by bin/keys).
+# The header arg is single-quoted so mcp-remote expands ${...} itself: the key
+# stays in the environment and never appears in argv / `ps`.
+set -euo pipefail
+
+EXCALIDRAW_AUTH_HEADER="Bearer $(security find-generic-password -s EXCALIDRAW_API_KEY -a "$USER" -w)"
+export EXCALIDRAW_AUTH_HEADER
+
+# Pin npm version — bumps must be intentional (wrapper runs with secrets in env).
+exec npx -y mcp-remote@0.1.38 https://api.excalidraw.com/api/v1/mcp \
+  --header 'Authorization:${EXCALIDRAW_AUTH_HEADER}'
