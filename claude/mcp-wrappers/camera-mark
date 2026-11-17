@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# Camera Mark Visualizer MCP: drives cameramarkvisualizer.com in Playwright's Chromium.
+# Source: ~/projects/camera-mark-mcp (local, no npm package). Needs no secrets.
+# CAMERA_MARK_HEADED=1 opens a visible Chrome window so you can watch edits live.
+set -euo pipefail
+exec /opt/homebrew/bin/node /Users/zachkysar/projects/camera-mark-mcp/src/server.ts
