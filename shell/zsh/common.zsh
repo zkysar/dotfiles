@@ -71,6 +71,7 @@ _ensure_completion() {
 _ensure_completion kubectl   "$HOME/.cache/zsh/completions/_kubectl"   completion zsh
 _ensure_completion gh        "$HOME/.cache/zsh/completions/_gh"        completion -s zsh
 _ensure_completion runpodctl "$HOME/.cache/zsh/completions/_runpodctl" completion generate zsh
+_ensure_completion lc        "$HOME/.cache/zsh/completions/_lc"        completion zsh
 
 fpath=("$HOME/.zsh/completions" "$HOME/.zsh/external-completions" "$HOME/.cache/zsh/completions" $fpath)
 autoload -U +X compinit && compinit
