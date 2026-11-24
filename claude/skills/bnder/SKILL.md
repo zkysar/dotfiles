@@ -48,6 +48,12 @@ to names**: there is no list-members endpoint, and
 
 ## When the MCP won't connect
 
+If the only bnder tool is `bnder_login`, the login expired (about every 30
+days). Call it: a Bnder approval page opens in the browser, Zach clicks
+Approve, then reconnect bnder (`/mcp` in Claude Code, quit and reopen Claude
+Desktop). The wrapper serves this stand-in whenever no token is cached, so
+apps start cleanly instead of showing "bnder couldn't start".
+
 `Failed to reconnect to bnder: -32000` means the OAuth token cache is empty or
 dead. Read `references/setup.md` in this skill directory for the bootstrap
 procedure. Do not improvise it.

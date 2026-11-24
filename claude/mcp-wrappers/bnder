@@ -15,11 +15,20 @@
 #
 # Cold-start caveat: bnder returns 403 (not 401) and omits WWW-Authenticate when
 # no token is presented, and mcp-remote only begins its OAuth flow on a 401. The
-# very first login therefore cannot happen through this wrapper; it is bootstrapped
-# once out of band (see the bnder section of claude/CLAUDE.md). Once tokens are
+# very first login therefore cannot happen through mcp-remote directly; the
+# bnder_login tool in bnder-login-stub.mjs runs the bootstrap. Once tokens are
 # cached in ~/.mcp-auth/, mcp-remote always sends an Authorization header, so
 # expiry yields a 401 and refresh proceeds normally.
 set -euo pipefail
+export PATH="/opt/homebrew/bin:$PATH"  # Desktop launches with a minimal PATH
+
+# No cached token (first run, or the ~30-day login expired): start a stand-in
+# server instead of failing, so apps don't flash "bnder couldn't start". It
+# exposes one tool, bnder_login, which runs the bootstrap only when asked.
+TOKENS="$HOME/.mcp-auth/mcp-remote-0.1.37/7377299867445b3049db6e70498c2b00_tokens.json"
+if [[ ! -f "$TOKENS" ]]; then
+  exec node "$(dirname "$(readlink -f "$0")")/bnder-login-stub.mjs"
+fi
 
 # Pin npm version — bumps must be intentional.
 exec npx -y mcp-remote@0.1.38 https://api.bnder.net/consumer/v1/mcp 3334 \
