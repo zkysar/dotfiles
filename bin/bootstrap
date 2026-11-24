@@ -65,6 +65,23 @@ bootstrap_macos() {
   done < <(parse_projects)
 
   echo ""
+  echo "Installing uv tools from project repos…"
+  if ! command -v uv >/dev/null 2>&1; then
+    echo "→ installing uv"
+    brew install uv
+  fi
+  # lc (leetcode-offline): editable install, so repo edits apply without reinstalling.
+  if command -v lc >/dev/null 2>&1; then
+    echo "✓ lc"
+  elif [ -d "$HOME/leetcode-offline/.git" ]; then
+    echo "→ installing lc"
+    uv tool install --python 3.12 -e "$HOME/leetcode-offline" \
+      || echo "  warn: lc install failed; run: uv tool install --python 3.12 -e ~/leetcode-offline" >&2
+  else
+    echo "  warn: ~/leetcode-offline missing (clone failed?); skipping lc" >&2
+  fi
+
+  echo ""
   echo "Loading dotfiles-managed LaunchAgents…"
   for plist in ~/Library/LaunchAgents/com.zachkysar.*.plist; do
     [[ -e "$plist" ]] || continue

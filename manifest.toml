@@ -142,6 +142,10 @@ dest     = "~/.config/paperstem/import.json"
 repo = "git@github.com:zkysar/media-import.git"
 path = "~/projects/utils/media-import"
 
+[[project]]
+repo = "git@github.com:zkysar/leetcode-offline.git"
+path = "~/leetcode-offline"
+
 [[link]]
 src      = "~/projects/utils/media-import/media-import"
 platform = "macos"
