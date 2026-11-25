@@ -6,7 +6,8 @@
     ],
     "deny": [
       "Bash(keeper*)",
-      "Bash(kp*)"
+      "Bash(kp*)",
+      "Read(//Users/zachkysar/.keeper/**)"
     ],
     "ask": [
       "Bash(git push *)",
