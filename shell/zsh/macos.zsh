@@ -19,7 +19,6 @@ zsh-defer source '/opt/homebrew/share/google-cloud-sdk/completion.zsh.inc'
 alias python='python3.11'
 alias pip='pip3.11'
 alias gyroflow="/Applications/Gyroflow.app/Contents/MacOS/gyroflow"
-alias claude-mem='bun "/Users/zachkysar/.claude/plugins/cache/thedotmack/claude-mem/13.2.0/scripts/worker-service.cjs"'
 
 # NAS toolbox entry (rides existing ssh zachnas + passwordless sudo).
 # Full docker path: Container Manager's binary isn't on sudo's secure_path.
