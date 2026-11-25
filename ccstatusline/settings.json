@@ -1,0 +1,124 @@
+{
+  "version": 4,
+  "lines": [
+    [
+      {
+        "id": "cwd",
+        "type": "current-working-dir",
+        "rawValue": true,
+        "bold": true,
+        "metadata": {
+          "segments": "1"
+        },
+        "color": "default"
+      },
+      {
+        "id": "gb",
+        "type": "git-branch",
+        "color": "magenta",
+        "maxWidth": 24,
+        "metadata": {
+          "hide": "no-git"
+        }
+      },
+      {
+        "id": "gi",
+        "type": "git-insertions",
+        "color": "green",
+        "metadata": {
+          "hide": "no-git,zero"
+        }
+      },
+      {
+        "id": "gd",
+        "type": "git-deletions",
+        "color": "red",
+        "metadata": {
+          "hide": "no-git,zero"
+        }
+      },
+      {
+        "id": "pr",
+        "type": "git-review",
+        "color": "blue",
+        "metadata": {
+          "hide": "no-git,no-data"
+        }
+      },
+      {
+        "id": "s1",
+        "type": "separator",
+        "color": "brightBlack",
+        "character": "\u2502 "
+      },
+      {
+        "id": "cb",
+        "type": "context-bar",
+        "rawValue": true,
+        "color": "default",
+        "metadata": {
+          "display": "slider-only"
+        }
+      },
+      {
+        "id": "cp",
+        "type": "context-percentage",
+        "rawValue": true,
+        "color": "default",
+        "numberFormat": {
+          "style": "whole"
+        }
+      },
+      {
+        "id": "s2",
+        "type": "separator",
+        "color": "brightBlack",
+        "character": "\u2502 "
+      },
+      {
+        "id": "su",
+        "type": "session-usage",
+        "rawValue": false,
+        "color": "default",
+        "numberFormat": {
+          "style": "whole"
+        },
+        "metadata": {
+          "hide": "no-data"
+        },
+        "dim": true
+      },
+      {
+        "id": "s3",
+        "type": "separator",
+        "color": "brightBlack",
+        "character": "\u2502 "
+      },
+      {
+        "id": "m",
+        "type": "model",
+        "rawValue": true,
+        "color": "default",
+        "dim": true
+      }
+    ]
+  ],
+  "colorLevel": 1,
+  "defaultPadding": " ",
+  "defaultPaddingSide": "right",
+  "inheritSeparatorColors": false,
+  "globalBold": false,
+  "powerline": {
+    "enabled": false,
+    "separators": [
+      ""
+    ],
+    "separatorInvertBackground": [
+      false
+    ],
+    "startCaps": [],
+    "endCaps": [],
+    "theme": "nord",
+    "autoAlign": true
+  }
+}

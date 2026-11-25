@@ -111,6 +111,11 @@ platform = "macos"
 dest     = "~/.config/ghostty/config"
 
 [[link]]
+src      = "ccstatusline/settings.json"
+platform = "macos"
+dest     = "~/.config/ccstatusline/settings.json"
+
+[[link]]
 src      = "launchd/com.zachkysar.tmp-sweep.plist"
 platform = "macos"
 dest     = "~/Library/LaunchAgents/com.zachkysar.tmp-sweep.plist"
