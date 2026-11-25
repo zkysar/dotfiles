@@ -12,6 +12,9 @@ claude/**/cache/
 claude/**/*.cache
 claude/**/*.log
 
+# Account skills Claude Code syncs from claude.ai (auto-managed, re-downloaded)
+claude/skills/synced/
+
 # Editor/OS noise
 .DS_Store
 nvim/.netrwhist
